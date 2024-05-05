@@ -46,7 +46,9 @@ export const smartapp = new SmartApp()
 
 server.use(express.json());
 
-server.post('/healthz', (_req, res) => {
+server.get('/healthz', (_req, res) => {
+  // eslint-disable-next-line no-console
+  console.log('/healthz 200');
   res.sendStatus(200);
 });
 
