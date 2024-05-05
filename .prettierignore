@@ -1,0 +1,16 @@
+npm-shrinkwrap.json
+.github
+assets
+coverage
+dist
+docs
+src/bin
+src/config.ts
+**/*.md
+**/*.js
+
+# Defaults
+**/.git
+**/.svn
+**/.hg
+**/node_modules
