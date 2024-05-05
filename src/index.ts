@@ -4,7 +4,7 @@ import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
 import express from 'express';
 
 const server = express();
-const PORT = 443;
+const PORT = 10000;
 
 const DEVICE_EVENTS_QUEUE: AppEvent.DeviceEvent[] = [];
 
