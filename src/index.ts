@@ -10,15 +10,12 @@ const DEVICE_EVENTS_QUEUE: AppEvent.DeviceEvent[] = [];
 
 export const smartapp = new SmartApp()
   .enableEventLogging(2)
-  // .page('mainPage', (_context, page) => {
-  //   page.section('sensors', (section) => {
-  //     section.deviceSetting('contactSensor').capabilities(['contactSensor']);
-  //   });
-  //   page.section('lights', (section) => {
-  //     section.deviceSetting('lights').capabilities(['*']).permissions('r').multiple(true);
-  //   });
-  // })
-  .updated(async (context) => {
+  .appId('9c74d2c3-1ed8-4a90-95bc-389fe9c22011')
+  .permissions(['r:devices:*', 'r:locations:*'])
+  .page('mainPage', () => {})
+  .installed(async (context) => {
+    // eslint-disable-next-line no-console
+    console.info('-----installed');
     await context.api.subscriptions.delete(); // clear any existing configuration
     await context.api.subscriptions.subscribeToDevices(
       [
@@ -36,10 +33,10 @@ export const smartapp = new SmartApp()
       'HSWSdeviceEventHandler',
     );
   })
-  .subscribedEventHandler('HSWSdeviceEventHandler', async (_context, event) => {
-    DEVICE_EVENTS_QUEUE.push(event);
+  .subscribedDeviceEventHandler('HSWSdeviceEventHandler', async (_context, event) => {
     // eslint-disable-next-line no-console
     console.info(JSON.stringify(event, undefined, 2));
+    DEVICE_EVENTS_QUEUE.push(event);
     // const value = event.value === 'open' ? 'on' : 'off';
     // await context.api.devices.sendCommands(context.config.lights, 'switch', value);
   });
@@ -48,7 +45,7 @@ server.use(express.json());
 
 server.get('/healthz', (_req, res) => {
   // eslint-disable-next-line no-console
-  console.log('/healthz 200');
+  console.debug('/healthz 200');
   res.sendStatus(200);
 });
 
