@@ -1,9 +1,10 @@
 {
   "name": "homebridge-smartthings-webhook-server",
   "version": "0.0.1",
-  "description": "",
-  "license": "UNLICENSED",
+  "description": "[ Description coming soon... ]",
   "author": "duddu",
+  "license": "MPL-2.0",
+  "homepage": "https://github.com/duddu/homebridge-smartthings-webhook-server#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/duddu/homebridge-smartthings-webhook-server.git"
@@ -11,7 +12,6 @@
   "bugs": {
     "url": "https://github.com/duddu/homebridge-smartthings-webhook-server/issues"
   },
-  "homepage": "https://github.com/duddu/homebridge-smartthings-webhook-server#readme",
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint src/**/*.ts",
@@ -22,15 +22,19 @@
   },
   "dependencies": {
     "@smartthings/smartapp": "^4.3.4",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "node-cache": "^5.1.2",
+    "safe-stable-stringify": "^2.4.3",
+    "winston": "^3.13.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@types/express": "^4.17.21",
-    "@types/node": "^20.12.8",
+    "@types/node": "^20.12.10",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
     "eslint": "^8.57.0",
+    "homebridge-smartthings-ik": ">=1.5.21",
     "prettier": "^3.2.5",
     "prettier-eslint": "^16.3.0",
     "rimraf": "^5.0.5",

@@ -1,37 +1,21 @@
-import { ConfigValueType } from '@smartthings/core-sdk';
 import { SmartApp } from '@smartthings/smartapp';
 
-import { DEVICE_EVENTS_QUEUE } from './events';
+import { eventsCaches } from './events';
+import { logger, smartAppLogger } from './logger';
 
-export const smartapp = new SmartApp()
+export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
+
+export const smartApp = new SmartApp()
+  .configureLogger(smartAppLogger)
   .enableEventLogging(2)
-  .appId('9c74d2c3-1ed8-4a90-95bc-389fe9c22011')
+  .appId(process.env.SMART_APP_ID!) // @TODO throw if no env var
   .permissions(['r:devices:*', 'r:locations:*'])
   .page('mainPage', () => {})
   .installed(async (context) => {
-    // eslint-disable-next-line no-console
-    console.info('-----installed');
-    await context.api.subscriptions.delete(); // clear any existing configuration
-    await context.api.subscriptions.subscribeToDevices(
-      [
-        {
-          valueType: ConfigValueType.DEVICE,
-          deviceConfig: {
-            deviceId: '918f7f2c-b923-4d0c-8348-2828c7410849',
-            componentId: 'main',
-            permissions: ['r'],
-          },
-        },
-      ],
-      '*',
-      '*',
-      'HSWSdeviceEventHandler',
-    );
+    logger.debug('SmartApp installed');
+    await context.api.subscriptions.delete();
   })
-  .subscribedDeviceEventHandler('HSWSdeviceEventHandler', async (_context, event) => {
-    // eslint-disable-next-line no-console
-    console.info(JSON.stringify(event, undefined, 2));
-    DEVICE_EVENTS_QUEUE.push(event);
-    // const value = event.value === 'open' ? 'on' : 'off';
-    // await context.api.devices.sendCommands(context.config.lights, 'switch', value);
+  .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, (_context, event) => {
+    logger.debug('Device event received', event);
+    eventsCaches.addEvent(event);
   });
