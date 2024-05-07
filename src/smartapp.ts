@@ -1,6 +1,6 @@
 import { SmartApp } from '@smartthings/smartapp';
 
-import { contextStore } from './context';
+import { contextsCache } from './context';
 import { eventsCaches } from './events';
 import { logger, smartAppLogger } from './logger';
 
@@ -19,11 +19,7 @@ export const smartApp = new SmartApp()
   .installed(async (context, installData) => {
     logger.debug('SmartApp installed');
     await context.api.subscriptions.delete();
-    contextStore.put({
-      installedAppId: installData.installedApp.installedAppId,
-      authToken: installData.authToken,
-      refreshToken: installData.refreshToken,
-    });
+    await contextsCache.put(installData);
   })
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, (_context, event) => {
     logger.debug('Device event received', event);

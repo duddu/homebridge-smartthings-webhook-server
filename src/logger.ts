@@ -7,13 +7,14 @@ const enum LoggerCategories {
   SmartApp = 'STSA',
 }
 
-const { combine, label, simple, timestamp } = format;
+const { combine, errors, label, json, timestamp } = format;
 
 const getLoggerFormat = (category: LoggerCategories): Logform.Format =>
   combine(
     timestamp(),
+    errors({ stack: true }),
     label({ label: category }),
-    simple(),
+    json(),
     // printf(({ label, level, message, timestamp, ...rest }) => {
     //   let log = `${timestamp} [${label}] ${level}: ${message}`;
     //   const stringifiedRest = stringify(rest, void 0, 2);

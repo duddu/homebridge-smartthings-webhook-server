@@ -1,51 +1,66 @@
 import { ContextRecord, SmartAppContext } from '@smartthings/smartapp';
+import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
 import NodeCache from 'node-cache';
 
 import { logger } from './logger';
 import { smartApp } from './smartapp';
 
-class HSWSSmartAppContextStore {
+export type HSWSSmartAppContextsCacheItem = {
+  context: SmartAppContext;
+  subscribedDevicesIds: Set<string>;
+};
+
+class HSWSSmartAppContextsCache {
   private readonly contexts: NodeCache;
 
   constructor() {
     this.contexts = new NodeCache({
       stdTTL: 0,
       checkperiod: 0,
-      useClones: true,
+      useClones: false,
     });
   }
 
-  public put(contextRecord: ContextRecord): void {
-    const { installedAppId } = contextRecord;
-    if (!this.contexts.set(installedAppId, contextRecord)) {
-      const message = `Unable to store context record for installedAppId ${installedAppId}`;
-      logger.error(message);
-      throw new Error(message);
+  public async put({ installedApp, authToken, refreshToken }: AppEvent.InstallData): Promise<void> {
+    const { installedAppId } = installedApp;
+    try {
+      const contextRecord: ContextRecord = {
+        installedAppId,
+        authToken,
+        refreshToken,
+      };
+      const context = await smartApp.withContext(contextRecord);
+      const subscriptions = await context.api.subscriptions.list();
+      const subscribedDevicesIds = new Set<string>(
+        subscriptions
+          .map(({ device }) => device?.deviceId)
+          .filter((deviceId): deviceId is string => typeof deviceId === 'string'),
+      );
+      if (
+        !this.contexts.set<HSWSSmartAppContextsCacheItem>(installedAppId, {
+          context,
+          subscribedDevicesIds,
+        })
+      ) {
+        throw new Error(`Unable to set the value for cache key ${installedAppId}`);
+      }
+      logger.debug(`Stored smart app context for installedAppId ${installedAppId}`, {
+        subscribedDevicesIds,
+      });
+    } catch (error) {
+      logger.error(
+        `Unable to store smart app context for installedAppId ${installedAppId}. ` +
+          'The app will not receive devices events, please try to reinstall it from SmartThings.',
+        error,
+      );
     }
-    logger.debug(`Stored context record for installedAppId ${installedAppId}`);
   }
 
-  public async getAllSmartAppContexts(): Promise<SmartAppContext[]> {
-    logger.silly('Getting all smart app contexts', { contextsKeys: this.contexts.keys() });
-    return (
-      await Promise.allSettled(
-        this.contexts
-          .keys()
-          .map((installedAppId) =>
-            smartApp.withContext(this.contexts.get<ContextRecord>(installedAppId)!),
-          ),
-      )
-    )
-      .filter((result): result is PromiseFulfilledResult<SmartAppContext> => {
-        if (result.status === 'fulfilled') {
-          return true;
-        }
-        logger.debug('Unable to resolve smart app context', result.reason);
-        logger.error('Unable to resolve smart app context', result.reason);
-        return false;
-      })
-      .map(({ value }) => value);
+  public getAllContexts(): HSWSSmartAppContextsCacheItem[] {
+    const contextsKeys = this.contexts.keys();
+    logger.silly('Getting all smart app contexts', { contextsKeys });
+    return Object.values(this.contexts.mget<HSWSSmartAppContextsCacheItem>(contextsKeys));
   }
 }
 
-export const contextStore = new HSWSSmartAppContextStore();
+export const contextsCache = new HSWSSmartAppContextsCache();

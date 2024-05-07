@@ -1,77 +1,74 @@
-import {
-  ConfigEntry,
-  ConfigValueType,
-  Subscription,
-  SubscriptionsEndpoint,
-} from '@smartthings/core-sdk';
-import { SmartAppContext } from '@smartthings/smartapp';
+import { ConfigEntry, ConfigValueType } from '@smartthings/core-sdk';
 
-import { contextStore } from './context';
+import { contextsCache, HSWSSmartAppContextsCacheItem } from './context';
 import { logger } from './logger';
 import { DEVICE_EVENT_HANDLER_NAME } from './smartapp';
 
 class HSWSDevices {
-  public async subscribeAllInstalledApps(devicesIds: string[]): Promise<Subscription[][]> {
-    logger.debug(`subscribeAllInstalledApps`);
+  public async subscribeAllInstalledApps(devicesIds: Set<string>): Promise<void[]> {
     return await Promise.all(
-      (await contextStore.getAllSmartAppContexts()).map(async (context) => {
-        logger.debug(`Subscribing to devices id`);
-        return this.subscribeInstalledApp(context, devicesIds);
-      }),
+      contextsCache
+        .getAllContexts()
+        .map(async (context) => this.subscribeInstalledApp(context, devicesIds)),
     );
   }
 
   private async subscribeInstalledApp(
-    context: SmartAppContext,
-    devicesIds: string[],
-  ): Promise<Subscription[]> {
+    { context, subscribedDevicesIds }: HSWSSmartAppContextsCacheItem,
+    devicesIds: Set<string>,
+  ): Promise<void> {
+    const { installedAppId } = context.api.apps;
     try {
-      logger.debug('subscribeInstalledApp start');
-      const { installedAppId } = context.api.apps;
-      const { subscriptions: subscriptionsEndpoint } = context.api;
-      logger.debug('subscribeInstalledApp before getUnsubscribedDevicesIds');
-      const unsubscribedDevicesIds = await this.getUnsubscribedDevicesIds(
-        subscriptionsEndpoint,
-        devicesIds,
-      );
-      logger.debug('Received new devices ids to subscribe to', {
-        unsubscribedDevicesIds,
+      const unsubscribedDevicesIds = devicesIds;
+      if (subscribedDevicesIds.size > 0) {
+        for (const id of unsubscribedDevicesIds) {
+          if (subscribedDevicesIds.has(id)) {
+            unsubscribedDevicesIds.delete(id);
+          }
+        }
+      }
+      if (unsubscribedDevicesIds.size === 0) {
+        return;
+      }
+      logger.debug('Received new devices to subscribe to', {
         installedAppId,
+        unsubscribedDevicesIds,
       });
-      return await subscriptionsEndpoint.subscribeToDevices(
+      await context.api.subscriptions.subscribeToDevices(
         this.getDevicesConfigEntries(unsubscribedDevicesIds),
         '*',
         '*',
         DEVICE_EVENT_HANDLER_NAME,
       );
+      for (const id of unsubscribedDevicesIds) {
+        subscribedDevicesIds.add(id);
+      }
+      logger.debug('Subscribed to new devices events', {
+        installedAppId,
+        subscribedDevicesIds,
+      });
     } catch (error) {
-      logger.debug('subscribeInstalledApp catch');
-      logger.debug('subscribeInstalledApp', error);
-      const { installedAppId } = context.api.apps;
-      logger.debug('Unable to subscribe to new devices events', { installedAppId, error });
-      logger.error('Unable to subscribe to new devices events', { installedAppId, error });
-      return Promise.resolve([]);
+      logger.error(
+        `Unable to subscribe installed app ${installedAppId} to new devices events`,
+        error,
+      );
+      return Promise.resolve();
     }
   }
 
-  private getUnsubscribedDevicesIds = async (
-    subscriptionsEndpoint: SubscriptionsEndpoint,
-    devicesIds: string[],
-  ) => {
-    const subscriptions = await subscriptionsEndpoint.list();
-    const subscribedDevicesIds = subscriptions.map(({ device }) => device?.deviceId);
-    return devicesIds.filter((id) => !subscribedDevicesIds.includes(id));
-  };
-
-  private getDevicesConfigEntries = (devicesIds: string[]): ConfigEntry[] => {
-    return devicesIds.map((deviceId) => ({
-      valueType: ConfigValueType.DEVICE,
-      deviceConfig: {
-        deviceId,
-        componentId: 'main',
-        permissions: ['r'],
-      },
-    }));
+  private getDevicesConfigEntries = (unsubscribedDevicesIds: Set<string>): ConfigEntry[] => {
+    const configEntries: ConfigEntry[] = [];
+    for (const deviceId of unsubscribedDevicesIds) {
+      configEntries.push({
+        valueType: ConfigValueType.DEVICE,
+        deviceConfig: {
+          deviceId,
+          componentId: 'main',
+          permissions: ['r'],
+        },
+      });
+    }
+    return configEntries;
   };
 }
 
