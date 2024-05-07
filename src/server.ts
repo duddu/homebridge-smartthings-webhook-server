@@ -33,7 +33,7 @@ const clientrequestMiddleware: RequestHandler<never, ResponseBody, RequestBody> 
     return;
   }
 
-  await devices.subscribeToIds(req.body.deviceIds);
+  await devices.subscribeAllInstalledApps(req.body.deviceIds);
 
   const events = eventsCaches.getCache(bearer).flushEvents();
   res.status(200).json({ timeout: false, events });
