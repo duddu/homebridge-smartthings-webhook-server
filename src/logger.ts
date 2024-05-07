@@ -1,27 +1,26 @@
 import { Logger as SmartAppLogger } from '@smartthings/smartapp/lib/util/log';
 import winston, { config, format, Logform, LoggerOptions, transports } from 'winston';
-import { stringify } from 'safe-stable-stringify';
+// import { stringify } from 'safe-stable-stringify';
 
 const enum LoggerCategories {
   WebhookServer = 'HSWS',
   SmartApp = 'STSA',
 }
 
-const { combine, errors, label, printf, timestamp } = format;
+const { combine, label, timestamp } = format;
 
 const getLoggerFormat = (category: LoggerCategories): Logform.Format =>
   combine(
     timestamp(),
-    errors({ stack: true }),
     label({ label: category }),
-    printf(({ label, level, message, timestamp, ...rest }) => {
-      let log = `${timestamp} [${label}] ${level}: ${message}`;
-      const stringifiedRest = stringify(rest, void 0, 2);
-      if (stringifiedRest !== '{}') {
-        log += ` ${stringifiedRest}`;
-      }
-      return log;
-    }),
+    // printf(({ label, level, message, timestamp, ...rest }) => {
+    //   let log = `${timestamp} [${label}] ${level}: ${message}`;
+    //   const stringifiedRest = stringify(rest, void 0, 2);
+    //   if (stringifiedRest !== '{}') {
+    //     log += ` ${stringifiedRest}`;
+    //   }
+    //   return log;
+    // }),
   );
 
 const commonLoggerOptions: LoggerOptions = {

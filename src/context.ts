@@ -18,14 +18,15 @@ class HSWSSmartAppContextStore {
   public put(contextRecord: ContextRecord): void {
     const { installedAppId } = contextRecord;
     if (!this.contexts.set(installedAppId, contextRecord)) {
-      const message = `Unable to store context for installedAppId ${installedAppId}`;
+      const message = `Unable to store context record for installedAppId ${installedAppId}`;
       logger.error(message);
       throw new Error(message);
     }
+    logger.debug(`Stored context record for installedAppId ${installedAppId}`);
   }
 
   public async getAllSmartAppContexts(): Promise<SmartAppContext[]> {
-    logger.debug('Getting all smart app contexts', { contextsKeys: this.contexts.keys() });
+    logger.silly('Getting all smart app contexts', { contextsKeys: this.contexts.keys() });
     return (
       await Promise.allSettled(
         this.contexts
@@ -39,6 +40,7 @@ class HSWSSmartAppContextStore {
         if (result.status === 'fulfilled') {
           return true;
         }
+        logger.debug('Unable to resolve smart app context', result.reason);
         logger.error('Unable to resolve smart app context', result.reason);
         return false;
       })

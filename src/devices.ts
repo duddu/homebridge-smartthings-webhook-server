@@ -20,27 +20,29 @@ class HSWSDevices {
   }
 
   private async subscribeInstalledApp(
-    { api: { apps, subscriptions } }: SmartAppContext,
+    context: SmartAppContext,
     devicesIds: string[],
   ): Promise<Subscription[]> {
-    const { installedAppId } = apps;
+    const { installedAppId } = context.api.apps;
+    const { subscriptions: subscriptionsEndpoint } = context.api;
     try {
       const unsubscribedDevicesIds = await this.getUnsubscribedDevicesIds(
-        subscriptions,
+        subscriptionsEndpoint,
         devicesIds,
       );
       logger.debug('Received new devices ids to subscribe to', {
         unsubscribedDevicesIds,
         installedAppId,
       });
-      return await subscriptions.subscribeToDevices(
+      return await subscriptionsEndpoint.subscribeToDevices(
         this.getDevicesConfigEntries(unsubscribedDevicesIds),
         '*',
         '*',
         DEVICE_EVENT_HANDLER_NAME,
       );
     } catch (error) {
-      logger.error('Unable to subscribe to new devices events', { installedAppId }, error);
+      logger.debug('Unable to subscribe to new devices events', { installedAppId, error });
+      logger.error('Unable to subscribe to new devices events', { installedAppId, error });
       return Promise.resolve([]);
     }
   }
