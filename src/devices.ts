@@ -12,10 +12,12 @@ import { DEVICE_EVENT_HANDLER_NAME } from './smartapp';
 
 class HSWSDevices {
   public async subscribeAllInstalledApps(devicesIds: string[]): Promise<Subscription[][]> {
+    logger.debug(`subscribeAllInstalledApps`);
     return await Promise.all(
-      (await contextStore.getAllSmartAppContexts()).map(async (context) =>
-        this.subscribeInstalledApp(context, devicesIds),
-      ),
+      (await contextStore.getAllSmartAppContexts()).map(async (context) => {
+        logger.debug(`Subscribing to devices id`);
+        return this.subscribeInstalledApp(context, devicesIds);
+      }),
     );
   }
 
@@ -23,9 +25,11 @@ class HSWSDevices {
     context: SmartAppContext,
     devicesIds: string[],
   ): Promise<Subscription[]> {
-    const { installedAppId } = context.api.apps;
-    const { subscriptions: subscriptionsEndpoint } = context.api;
     try {
+      logger.debug('subscribeInstalledApp start');
+      const { installedAppId } = context.api.apps;
+      const { subscriptions: subscriptionsEndpoint } = context.api;
+      logger.debug('subscribeInstalledApp before getUnsubscribedDevicesIds');
       const unsubscribedDevicesIds = await this.getUnsubscribedDevicesIds(
         subscriptionsEndpoint,
         devicesIds,
@@ -41,6 +45,9 @@ class HSWSDevices {
         DEVICE_EVENT_HANDLER_NAME,
       );
     } catch (error) {
+      logger.debug('subscribeInstalledApp catch');
+      logger.debug('subscribeInstalledApp', error);
+      const { installedAppId } = context.api.apps;
       logger.debug('Unable to subscribe to new devices events', { installedAppId, error });
       logger.error('Unable to subscribe to new devices events', { installedAppId, error });
       return Promise.resolve([]);
