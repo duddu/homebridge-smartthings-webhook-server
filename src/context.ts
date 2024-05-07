@@ -5,11 +5,15 @@ import { logger } from './logger';
 import { smartApp } from './smartapp';
 
 class HSWSSmartAppContextStore implements ContextStore {
-  private readonly contexts = new NodeCache({
-    stdTTL: 604800, // @TODO verify context recreation
-    checkperiod: 43200,
-    useClones: true,
-  });
+  private readonly contexts: NodeCache;
+
+  constructor() {
+    this.contexts = new NodeCache({
+      stdTTL: 0,
+      checkperiod: 0,
+      useClones: true,
+    });
+  }
 
   public async get(installedAppId: string): Promise<ContextRecord> {
     if (!this.contexts.has(installedAppId)) {

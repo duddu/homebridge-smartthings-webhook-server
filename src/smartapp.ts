@@ -10,6 +10,8 @@ export const smartApp = new SmartApp()
   .configureLogger(smartAppLogger)
   .enableEventLogging(2)
   .appId(process.env.SMART_APP_ID!) // @TODO throw if no env var
+  .clientId(process.env.SMART_APP_CLIENT_ID!)
+  .clientSecret(process.env.SMART_APP_CLIENT_SECRET!)
   .permissions(['r:devices:*', 'r:locations:*'])
   .page('mainPage', () => {})
   .installed(async (context) => {
