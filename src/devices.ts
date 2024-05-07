@@ -32,7 +32,7 @@ class HSWSDevices {
       }
       logger.debug('Received new devices to subscribe to', {
         installedAppId,
-        unsubscribedDevicesIds,
+        unsubscribedDevicesIdsSize: unsubscribedDevicesIds.size,
       });
       await context.api.subscriptions.subscribeToDevices(
         this.getDevicesConfigEntries(unsubscribedDevicesIds),
@@ -45,7 +45,7 @@ class HSWSDevices {
       }
       logger.debug('Subscribed to new devices events', {
         installedAppId,
-        subscribedDevicesIds,
+        subscribedDevicesIdsSize: subscribedDevicesIds.size,
       });
     } catch (error) {
       logger.error(

@@ -45,7 +45,7 @@ class HSWSSmartAppContextsCache {
         throw new Error(`Unable to set the value for cache key ${installedAppId}`);
       }
       logger.debug(`Stored smart app context for installedAppId ${installedAppId}`, {
-        subscribedDevicesIds,
+        subscribedDevicesIdsSize: subscribedDevicesIds.size,
       });
     } catch (error) {
       logger.error(

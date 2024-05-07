@@ -13,7 +13,6 @@
         "express": "^4.19.2",
         "express-slow-down": "^2.0.2",
         "node-cache": "^5.1.2",
-        "safe-stable-stringify": "^2.4.3",
         "winston": "^3.13.0"
       },
       "devDependencies": {
