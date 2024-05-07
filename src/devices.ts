@@ -1,4 +1,9 @@
-import { ConfigEntry, ConfigValueType, Subscription } from '@smartthings/core-sdk';
+import {
+  ConfigEntry,
+  ConfigValueType,
+  Subscription,
+  SubscriptionsEndpoint,
+} from '@smartthings/core-sdk';
 import { SmartAppContext } from '@smartthings/smartapp';
 
 import { contextStore } from './context';
@@ -6,54 +11,48 @@ import { logger } from './logger';
 import { DEVICE_EVENT_HANDLER_NAME } from './smartapp';
 
 class HSWSDevices {
-  private readonly subscribedDevicesIds: Set<string> = new Set();
+  public async subscribeAllInstalledApps(devicesIds: string[]): Promise<Subscription[][]> {
+    return await Promise.all(
+      (await contextStore.getAllSmartAppContexts()).map(async (context) =>
+        this.subscribeInstalledApp(context, devicesIds),
+      ),
+    );
+  }
 
-  public async subscribeInstalledApp(
-    context: SmartAppContext,
-    configEntries?: ConfigEntry[],
+  private async subscribeInstalledApp(
+    { api: { apps, subscriptions } }: SmartAppContext,
+    devicesIds: string[],
   ): Promise<Subscription[]> {
-    if (!configEntries) {
-      const ids = [];
-      for (const id of this.subscribedDevicesIds.values()) {
-        ids.push(id);
-      }
-      configEntries = this.getDevicesConfigEntries(ids);
-    }
+    const { installedAppId } = apps;
     try {
-      return await context.api.subscriptions.subscribeToDevices(
-        configEntries,
+      const unsubscribedDevicesIds = await this.getUnsubscribedDevicesIds(
+        subscriptions,
+        devicesIds,
+      );
+      logger.debug('Received new devices ids to subscribe to', {
+        unsubscribedDevicesIds,
+        installedAppId,
+      });
+      return await subscriptions.subscribeToDevices(
+        this.getDevicesConfigEntries(unsubscribedDevicesIds),
         '*',
         '*',
         DEVICE_EVENT_HANDLER_NAME,
       );
     } catch (error) {
-      logger.error(
-        'Unable to subscribe to new devices events',
-        {
-          installedAppId: context.api.apps.installedAppId,
-        },
-        error,
-      );
+      logger.error('Unable to subscribe to new devices events', { installedAppId }, error);
       return Promise.resolve([]);
     }
   }
 
-  public async subscribeAllInstalledApps(devicesIds: string[]): Promise<string[]> {
-    const newIds = devicesIds.filter((id) => !this.subscribedDevicesIds.has(id));
-    if (newIds.length === 0) {
-      return [];
-    }
-    const configEntries = this.getDevicesConfigEntries(newIds);
-    await Promise.all(
-      (await contextStore.getAllSmartAppContexts()).map(async (context) =>
-        this.subscribeInstalledApp(context, configEntries),
-      ),
-    );
-    for (const id of newIds) {
-      this.subscribedDevicesIds.add(id);
-    }
-    return newIds;
-  }
+  private getUnsubscribedDevicesIds = async (
+    subscriptionsEndpoint: SubscriptionsEndpoint,
+    devicesIds: string[],
+  ) => {
+    const subscriptions = await subscriptionsEndpoint.list();
+    const subscribedDevicesIds = subscriptions.map(({ device }) => device?.deviceId);
+    return devicesIds.filter((id) => !subscribedDevicesIds.includes(id));
+  };
 
   private getDevicesConfigEntries = (devicesIds: string[]): ConfigEntry[] => {
     return devicesIds.map((deviceId) => ({

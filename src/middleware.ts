@@ -60,9 +60,9 @@ export const rateLimitMiddleware = slowDown({
 });
 
 export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res) => {
-  await devices.subscribeAllInstalledApps(req.body.deviceIds);
-
   const events = eventsCaches.getCache(res.locals.authToken).flushEvents();
+
+  await devices.subscribeAllInstalledApps(req.body.deviceIds);
 
   res.status(200).json({ timeout: false, events });
 };
