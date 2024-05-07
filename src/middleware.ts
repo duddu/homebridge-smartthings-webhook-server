@@ -50,10 +50,10 @@ export const authTokenMiddleware: HSWSClientRequestHandler = (req, res, next) =>
 };
 
 export const rateLimitMiddleware = slowDown({
-  windowMs: 5000,
+  windowMs: 2000,
   delayAfter: 1,
-  delayMs: (hits) => hits * 150,
-  maxDelayMs: 900,
+  delayMs: (hits) => hits * 200,
+  maxDelayMs: 800,
   skipFailedRequests: true,
   validate: { xForwardedForHeader: false },
   keyGenerator: (_req, res) => (res.locals as HSWSExpressLocals).authToken,
