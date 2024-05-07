@@ -7,12 +7,13 @@ const enum LoggerCategories {
   SmartApp = 'STSA',
 }
 
-const { combine, label, timestamp } = format;
+const { combine, label, simple, timestamp } = format;
 
 const getLoggerFormat = (category: LoggerCategories): Logform.Format =>
   combine(
     timestamp(),
     label({ label: category }),
+    simple(),
     // printf(({ label, level, message, timestamp, ...rest }) => {
     //   let log = `${timestamp} [${label}] ${level}: ${message}`;
     //   const stringifiedRest = stringify(rest, void 0, 2);
@@ -34,7 +35,7 @@ winston.loggers.add(LoggerCategories.WebhookServer, {
   ...commonLoggerOptions,
   format: getLoggerFormat(LoggerCategories.WebhookServer),
   handleExceptions: true,
-  handleRejections: true,
+  handleRejections: false,
 });
 
 export const logger = winston.loggers.get(LoggerCategories.WebhookServer);
