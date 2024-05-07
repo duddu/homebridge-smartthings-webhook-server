@@ -12,7 +12,7 @@ import { smartApp } from './smartapp';
 const PORT = process.env.PORT; // @TODO throw if no env var
 const PATH_HEALTH = '/healthz';
 const PATH_API = '/api';
-const PATH_CLIENTREQUEST = `/${PATH_API}/clientrequest`;
+const PATH_CLIENTREQUEST = `${PATH_API}/clientrequest`;
 
 const healthMiddleware: RequestHandler = (_req, res) => {
   res.sendStatus(200);
