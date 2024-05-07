@@ -11,7 +11,6 @@ export const smartApp = new SmartApp()
   .enableEventLogging(2)
   .appId(process.env.SMART_APP_ID!) // @TODO throw if no env var
   .permissions(['r:devices:*', 'r:locations:*'])
-  .contextStore(contextStore)
   .page('mainPage', () => {})
   .installed(async (context) => {
     logger.debug('SmartApp installed');
@@ -20,4 +19,5 @@ export const smartApp = new SmartApp()
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, (_context, event) => {
     logger.debug('Device event received', event);
     eventsCaches.addEvent(event);
-  });
+  })
+  .contextStore(contextStore);

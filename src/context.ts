@@ -8,7 +8,7 @@ class HSWSSmartAppContextStore implements ContextStore {
   private readonly contexts = new NodeCache({
     stdTTL: 604800, // @TODO verify context recreation
     checkperiod: 43200,
-    useClones: false,
+    useClones: true,
   });
 
   public async get(installedAppId: string): Promise<ContextRecord> {
@@ -31,6 +31,7 @@ class HSWSSmartAppContextStore implements ContextStore {
   }
 
   public async getAllSmartAppContexts(): Promise<SmartAppContext[]> {
+    logger.debug('Getting all smart app contexts', { contextsKeys: this.contexts.keys() });
     return (
       await Promise.allSettled(
         this.contexts
