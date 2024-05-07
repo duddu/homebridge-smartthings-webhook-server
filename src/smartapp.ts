@@ -13,13 +13,19 @@ export const smartApp = new SmartApp()
   .clientId(process.env.SMART_APP_CLIENT_ID!)
   .clientSecret(process.env.SMART_APP_CLIENT_SECRET!)
   .permissions(['r:devices:*', 'r:locations:*'])
-  .page('mainPage', () => {})
-  .installed(async (context) => {
+  .page('mainPage', (_context, page) => {
+    page.name('Installation').complete(true);
+  })
+  .installed(async (context, installData) => {
     logger.debug('SmartApp installed');
     await context.api.subscriptions.delete();
+    contextStore.put({
+      installedAppId: installData.installedApp.installedAppId,
+      authToken: installData.authToken,
+      refreshToken: installData.refreshToken,
+    });
   })
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, (_context, event) => {
     logger.debug('Device event received', event);
     eventsCaches.addEvent(event);
-  })
-  .contextStore(contextStore);
+  });

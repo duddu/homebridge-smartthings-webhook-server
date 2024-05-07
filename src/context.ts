@@ -1,10 +1,10 @@
-import { ContextRecord, ContextStore, SmartAppContext } from '@smartthings/smartapp';
+import { ContextRecord, SmartAppContext } from '@smartthings/smartapp';
 import NodeCache from 'node-cache';
 
 import { logger } from './logger';
 import { smartApp } from './smartapp';
 
-class HSWSSmartAppContextStore implements ContextStore {
+class HSWSSmartAppContextStore {
   private readonly contexts: NodeCache;
 
   constructor() {
@@ -15,23 +15,13 @@ class HSWSSmartAppContextStore implements ContextStore {
     });
   }
 
-  public async get(installedAppId: string): Promise<ContextRecord> {
-    if (!this.contexts.has(installedAppId)) {
-      const message = `Unable to get stored context for installedAppId ${installedAppId}`;
-      logger.error(message);
-      return Promise.reject(message);
-    }
-    return Promise.resolve(this.contexts.get(installedAppId)!);
-  }
-
-  public async put(contextRecord: ContextRecord): Promise<ContextRecord> {
+  public put(contextRecord: ContextRecord): void {
     const { installedAppId } = contextRecord;
     if (!this.contexts.set(installedAppId, contextRecord)) {
       const message = `Unable to store context for installedAppId ${installedAppId}`;
       logger.error(message);
-      return Promise.reject(message);
+      throw new Error(message);
     }
-    return Promise.resolve(this.contexts.get(installedAppId)!);
   }
 
   public async getAllSmartAppContexts(): Promise<SmartAppContext[]> {
