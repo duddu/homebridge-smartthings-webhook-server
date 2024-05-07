@@ -21,6 +21,8 @@
     "prettier": "prettier --log-level warn --write .",
     "test": "jest --verbose --silent --forceExit --detectOpenHandles",
     "build": "rimraf ./dist && tsc",
+    "preDeploy:cleanup": "rimraf -g -- '!(package.json|npm-shrinkwrap.json|dist)' '.*'",
+    "preDeploy": "npm run preDeploy:cleanup && npm clean-install --omit=dev",
     "start": "node ./dist/index.js"
   },
   "dependencies": {
