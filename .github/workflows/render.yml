@@ -17,6 +17,6 @@ jobs:
       name: duddu.dev
       url: https://${{ vars.RENDER_CUSTOM_DOMAIN }}/healthz
     steps:
-      - name: Invoke Render hook
+      - name: Invoke Render webhook
         timeout-minutes: 1
         run: curl -fs https://api.render.com/deploy/${{ secrets.RENDER_PROJECT_ID }}?key=${{ secrets.RENDER_DEPLOY_KEY }}
