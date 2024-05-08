@@ -25,10 +25,6 @@ ARG APP_DIR
 WORKDIR ${APP_DIR}
 
 ARG NPM_VERSION
-ARG NPM_DISPLAY_NAME
-
-LABEL org.opencontainers.image.version ${NPM_VERSION}
-LABEL org.opencontainers.image.description "${NPM_DISPLAY_NAME} (v${NPM_VERSION})"
 
 ENV HSWS_VERSION=${NPM_VERSION}
 
