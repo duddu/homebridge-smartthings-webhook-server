@@ -60,7 +60,7 @@ jobs:
           labels: |
             ${{ steps.meta.outputs.labels }}
             org.opencontainers.image.version=${{ env.NPM_VERSION }}
-            org.opencontainers.image.description="${{ env.NPM_DISPLAY_NAME }} (v${{ env.NPM_VERSION }})"
+            org.opencontainers.image.description=${{ env.NPM_DISPLAY_NAME }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-cache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-cache,mode=max
       - name: Generate artifact attestation
