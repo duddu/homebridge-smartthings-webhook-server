@@ -5,6 +5,7 @@ import {
   ResponseBody,
 } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
 
+import { constants } from './constants';
 import { devices } from './devices';
 import { eventsCaches } from './events';
 import { logger } from './logger';
@@ -22,13 +23,16 @@ type HSWSClientRequestHandler = RequestHandler<
   HSWSExpressLocals
 >;
 
-export const logPathnameMiddleware: RequestHandler = (req, _res, next) => {
-  logger.silly(`Handling ${req.url}`);
-  next();
-};
-
 export const healthMiddleware: RequestHandler = (_req, res) => {
   res.sendStatus(200);
+};
+
+export const versionMiddleware: RequestHandler = (_req, res) => {
+  res.status(200).json({
+    version: constants.HSWS_VERSION,
+    revision: constants.HSWS_REVISION,
+    smartAppId: constants.STSA_SMART_APP_ID,
+  });
 };
 
 export const webhookMiddleware: RequestHandler = (req, res) => {

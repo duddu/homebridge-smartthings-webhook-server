@@ -6,18 +6,19 @@ import {
   authTokenMiddleware,
   clientRequestMiddleware,
   healthMiddleware,
-  logPathnameMiddleware,
   rateLimitMiddleware,
+  versionMiddleware,
   webhookMiddleware,
 } from './middleware';
 
 const PATH_HEALTH = '/healthz';
+const PATH_VERSION = '/version';
 const PATH_API = '/api';
 const PATH_CLIENTREQUEST = `${PATH_API}/clientrequest`;
 
 export const server = express()
-  .use(logPathnameMiddleware)
   .get(PATH_HEALTH, healthMiddleware)
+  .get(PATH_VERSION, versionMiddleware)
   .use(express.json())
   .post(PATH_API, webhookMiddleware)
   .post(PATH_CLIENTREQUEST, authTokenMiddleware, rateLimitMiddleware, clientRequestMiddleware)

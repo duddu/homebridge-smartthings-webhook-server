@@ -21,7 +21,7 @@ jobs:
       id-token: write
       attestations: write
     env:
-      GIT_REVISION:
+      GIT_REV_SHORT:
       NPM_VERSION:
       NPM_DISPLAY_NAME:
     steps:
@@ -32,7 +32,7 @@ jobs:
           fetch-tags: true
       - name: Set npm environment variables
         run: |
-          echo "GIT_REVISION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "GIT_REV_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "NPM_VERSION=$(npm pkg get version | tr -d '"')" >> $GITHUB_ENV
           echo "NPM_DISPLAY_NAME=$(npm pkg get displayName | tr -d '"')" >> $GITHUB_ENV
       - name: Log in to the container registry
@@ -63,18 +63,18 @@ jobs:
           target: production
           build-args: |
             NPM_VERSION=${{ env.NPM_VERSION }}
-            GIT_REVISION=${{ env.GIT_REVISION }}
+            GIT_REV_SHORT=${{ env.GIT_REV_SHORT }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.NPM_VERSION }}
           labels: |
             ${{ steps.meta.outputs.labels }}
             org.opencontainers.image.version=${{ env.NPM_VERSION }}
-            org.opencontainers.image.description=${{ env.NPM_DISPLAY_NAME }}
+            org.opencontainers.image.description="${{ env.NPM_DISPLAY_NAME }} (${{ env.NPM_VERSION}} - ${{ env.GIT_REV_SHORT }})"
           annotations: |
             ${{ steps.meta.outputs.annotations }}
             org.opencontainers.image.version=${{ env.NPM_VERSION }}
-            org.opencontainers.image.description=${{ env.NPM_DISPLAY_NAME }}
+            org.opencontainers.image.description="${{ env.NPM_DISPLAY_NAME }} (${{ env.NPM_VERSION}} - ${{ env.GIT_REV_SHORT }})"
           platforms: linux/arm64/v8,linux/amd64
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-cache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-cache,mode=max
@@ -95,4 +95,5 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /repos/${{ github.repository }}/dispatches \
             -f "event_type=deploy-render" \
-            -F "client_payload[commit_message]=$COMMIT_MESSAGE"
+            -F "client_payload[commit_message]=$COMMIT_MESSAGE" \
+            -F "client_payload[git_rev_short]=$GIT_REV_SHORT"

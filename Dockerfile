@@ -25,10 +25,10 @@ ARG APP_DIR
 WORKDIR ${APP_DIR}
 
 ARG NPM_VERSION
-ARG GIT_REVISION
+ARG GIT_REV_SHORT
 
 ENV HSWS_VERSION=${NPM_VERSION}
-ENV HSWS_REVISION=${GIT_REVISION}
+ENV HSWS_REVISION=${GIT_REV_SHORT}
 
 COPY --from=builder --chown=node:node ${APP_DIR}/bin/entrypoint.sh /usr/bin/
 COPY --from=builder --chown=node:node ${APP_DIR}/dist ./
