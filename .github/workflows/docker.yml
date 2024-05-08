@@ -54,10 +54,13 @@ jobs:
           context: .
           push: true
           target: production
-          build-args: |
-            NPM_VERSION=${{ env.NPM_VERSION }}
+          build-args: NPM_VERSION=${{ env.NPM_VERSION }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
+            ${{ steps.meta.outputs.labels }}
+            org.opencontainers.image.version=${{ env.NPM_VERSION }}
+            org.opencontainers.image.description=${{ env.NPM_DISPLAY_NAME }}
+          annotations: |
             ${{ steps.meta.outputs.labels }}
             org.opencontainers.image.version=${{ env.NPM_VERSION }}
             org.opencontainers.image.description=${{ env.NPM_DISPLAY_NAME }}
