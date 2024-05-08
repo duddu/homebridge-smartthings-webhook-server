@@ -1,0 +1,22 @@
+name: Deploy on Render
+
+run-name: ${{ github.event.client_payload.commit_message }}
+
+on:
+  repository_dispatch:
+    types: [ deploy-render ]
+
+concurrency:
+  group: deploy-render
+
+jobs:
+  deploy:
+    name: Trigger deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: duddu.dev
+      url: https://${{ vars.RENDER_CUSTOM_DOMAIN }}/healthz
+    steps:
+      - name: Invoke Render hook
+        timeout-minutes: 1
+        run: curl -fs https://api.render.com/deploy/${{ secrets.RENDER_PROJECT_ID }}?key=${{ secrets.RENDER_DEPLOY_KEY }}
