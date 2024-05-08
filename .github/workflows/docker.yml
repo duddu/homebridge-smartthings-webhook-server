@@ -57,13 +57,13 @@ jobs:
           build-args: NPM_VERSION=${{ env.NPM_VERSION }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
-            ${{ steps.meta.outputs.labels }}
             org.opencontainers.image.version=${{ env.NPM_VERSION }}
             org.opencontainers.image.description=${{ env.NPM_DISPLAY_NAME }}
+            ${{ steps.meta.outputs.labels }}
           annotations: |
-            ${{ steps.meta.outputs.labels }}
             org.opencontainers.image.version=${{ env.NPM_VERSION }}
             org.opencontainers.image.description=${{ env.NPM_DISPLAY_NAME }}
+            ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-cache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-cache,mode=max
       - name: Generate artifact attestation
