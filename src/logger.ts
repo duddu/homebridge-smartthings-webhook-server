@@ -1,6 +1,8 @@
 import { Logger as SmartAppLogger } from '@smartthings/smartapp/lib/util/log';
 import winston, { config, format, Logform, LoggerOptions, transports } from 'winston';
 
+import { constants } from './constants';
+
 const enum LoggerCategories {
   WebhookServer = 'HSWS',
   SmartApp = 'STSA',
@@ -18,7 +20,7 @@ const getLoggerFormat = (category: LoggerCategories): Logform.Format =>
   );
 
 const commonLoggerOptions: LoggerOptions = {
-  level: process.env.LOG_LEVEL,
+  level: constants.HSWS_LOG_LEVEL,
   levels: config.npm.levels,
   exitOnError: false,
   transports: [new transports.Console()],

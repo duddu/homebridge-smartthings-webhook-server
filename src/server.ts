@@ -1,5 +1,6 @@
 import express from 'express';
 
+import { constants } from './constants';
 import { logger } from './logger';
 import {
   authTokenMiddleware,
@@ -10,7 +11,7 @@ import {
   webhookMiddleware,
 } from './middleware';
 
-const PORT = process.env.PORT; // @TODO throw if no env var
+const PORT = constants.HSWS_PORT;
 const PATH_HEALTH = '/healthz';
 const PATH_API = '/api';
 const PATH_CLIENTREQUEST = `${PATH_API}/clientrequest`;

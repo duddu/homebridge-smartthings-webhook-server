@@ -1,5 +1,6 @@
 import { SmartApp } from '@smartthings/smartapp';
 
+import { constants } from './constants';
 import { contextsCache } from './context';
 import { eventsCaches } from './events';
 import { logger, smartAppLogger } from './logger';
@@ -9,9 +10,9 @@ export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
 export const smartApp = new SmartApp()
   .configureLogger(smartAppLogger)
   .enableEventLogging(2)
-  .appId(process.env.SMART_APP_ID!) // @TODO throw if no env var
-  .clientId(process.env.SMART_APP_CLIENT_ID!)
-  .clientSecret(process.env.SMART_APP_CLIENT_SECRET!)
+  .appId(constants.STSA_SMART_APP_ID)
+  .clientId(constants.STSA_SMART_APP_CLIENT_ID)
+  .clientSecret(constants.STSA_SMART_APP_CLIENT_SECRET)
   .permissions(['r:devices:*', 'r:locations:*'])
   .page('mainPage', (_context, page) => {
     page.name('Installation').complete(true);
