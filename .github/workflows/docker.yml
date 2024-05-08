@@ -2,8 +2,10 @@ name: Publish Docker image
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+
+concurrency:
+  group: publish-image
 
 env:
   REGISTRY: ghcr.io
@@ -13,8 +15,6 @@ jobs:
   build-and-push-image:
     name: Build and push image
     runs-on: ubuntu-latest
-    concurrency:
-      group: release
     permissions:
       contents: read
       packages: write
@@ -31,7 +31,6 @@ jobs:
           fetch-depth: 1
           fetch-tags: true
       - name: Set npm environment variables
-        shell: bash
         run: |
           echo "GIT_REVISION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "NPM_VERSION=$(npm pkg get version | tr -d '"')" >> $GITHUB_ENV
@@ -44,6 +43,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        id: qemu
+        with:
+          platforms: linux/arm64/v8,linux/amd64
       - name: Extract image metadata
         uses: docker/metadata-action@v5
         id: meta
@@ -55,11 +59,14 @@ jobs:
         with:
           context: .
           push: true
+          sbom: true
           target: production
           build-args: |
             NPM_VERSION=${{ env.NPM_VERSION }}
             GIT_REVISION=${{ env.GIT_REVISION }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.NPM_VERSION }}
           labels: |
             ${{ steps.meta.outputs.labels }}
             org.opencontainers.image.version=${{ env.NPM_VERSION }}
@@ -68,6 +75,7 @@ jobs:
             ${{ steps.meta.outputs.annotations }}
             org.opencontainers.image.version=${{ env.NPM_VERSION }}
             org.opencontainers.image.description=${{ env.NPM_DISPLAY_NAME }}
+          platforms: linux/arm64/v8,linux/amd64
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-cache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-cache,mode=max
       - name: Generate artifact attestation
