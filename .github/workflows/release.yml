@@ -12,6 +12,8 @@ env:
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
+    concurrency:
+      group: release
     permissions:
       contents: read
       packages: write

@@ -1,5 +1,6 @@
 {
   "name": "homebridge-smartthings-webhook-server",
+  "displayName": "Homebridge SmartThings Webhook Server",
   "version": "0.0.1",
   "description": "[ Description coming soon... ]",
   "author": "duddu",
@@ -17,11 +18,16 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint **/*.ts",
     "prettier": "prettier --log-level warn --write .",
     "test": "jest --verbose --silent --forceExit --detectOpenHandles",
-    "build": "rimraf ./dist && tsc",
-    "start": "node ./dist/index.js"
+    "test:watch": "npm run test -- --watch --no-coverage",
+    "test:quiet": "npm run test -- --verbose false --no-coverage",
+    "prebuild": "rimraf $npm_package_config_build_dir",
+    "prebuild:ci": "npm run prebuild",
+    "build": "tsc --rootDir $npm_package_config_src_dir --outDir $npm_package_config_build_dir",
+    "build:ci": "npx @vercel/ncc build $npm_package_config_src_entry -msC --target es2022 -o $npm_package_config_build_dir",
+    "start": "node $npm_package_config_build_dir"
   },
   "dependencies": {
     "@smartthings/smartapp": "^4.3.4",
@@ -48,5 +54,10 @@
   },
   "peerDependencies": {
     "@smartthings/core-sdk": "*"
+  },
+  "config": {
+    "src_dir": "./src",
+    "src_entry": "./src/index.ts",
+    "build_dir": "./dist"
   }
 }
