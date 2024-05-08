@@ -22,5 +22,10 @@ export const server = express()
   .post(PATH_API, webhookMiddleware)
   .post(PATH_CLIENTREQUEST, authTokenMiddleware, rateLimitMiddleware, clientRequestMiddleware)
   .listen(constants.HSWS_PORT, () =>
-    logger.info(`HSWS v${constants.HSWS_VERSION} is up and running on port ${constants.HSWS_PORT}`),
+    logger.info(`HSWS server ready`, {
+      port: constants.HSWS_PORT,
+      logLevel: constants.HSWS_LOG_LEVEL,
+      version: constants.HSWS_VERSION,
+      revision: constants.HSWS_REVISION,
+    }),
   );

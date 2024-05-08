@@ -1,6 +1,7 @@
 const {
   HSWS_PORT,
   HSWS_VERSION,
+  HSWS_REVISION,
   HSWS_LOG_LEVEL,
   STSA_SMART_APP_ID,
   STSA_SMART_APP_CLIENT_ID,
@@ -8,29 +9,13 @@ const {
 } = process.env;
 
 class HSWSConstants {
-  public get HSWS_PORT() {
-    return this.validate(HSWS_PORT);
-  }
-
-  public get HSWS_VERSION() {
-    return this.validate(HSWS_VERSION);
-  }
-
-  public get HSWS_LOG_LEVEL() {
-    return this.validate(HSWS_LOG_LEVEL);
-  }
-
-  public get STSA_SMART_APP_ID() {
-    return this.validate(STSA_SMART_APP_ID);
-  }
-
-  public get STSA_SMART_APP_CLIENT_ID() {
-    return this.validate(STSA_SMART_APP_CLIENT_ID);
-  }
-
-  public get STSA_SMART_APP_CLIENT_SECRET() {
-    return this.validate(STSA_SMART_APP_CLIENT_SECRET);
-  }
+  public readonly HSWS_PORT = this.validate(HSWS_PORT);
+  public readonly HSWS_VERSION = this.validate(HSWS_VERSION);
+  public readonly HSWS_REVISION = this.validate(HSWS_REVISION);
+  public readonly HSWS_LOG_LEVEL = this.validate(HSWS_LOG_LEVEL);
+  public readonly STSA_SMART_APP_ID = this.validate(STSA_SMART_APP_ID);
+  public readonly STSA_SMART_APP_CLIENT_ID = this.validate(STSA_SMART_APP_CLIENT_ID);
+  public readonly STSA_SMART_APP_CLIENT_SECRET = this.validate(STSA_SMART_APP_CLIENT_SECRET);
 
   private validate(envVar: string | undefined): string {
     if (typeof envVar !== 'string' || envVar.trim().length === 0) {

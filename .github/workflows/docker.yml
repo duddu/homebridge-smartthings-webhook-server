@@ -21,6 +21,7 @@ jobs:
       id-token: write
       attestations: write
     env:
+      GIT_REVISION:
       NPM_VERSION:
       NPM_DISPLAY_NAME:
     steps:
@@ -32,6 +33,7 @@ jobs:
       - name: Set npm environment variables
         shell: bash
         run: |
+          echo "GIT_REVISION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "NPM_VERSION=$(npm pkg get version | tr -d '"')" >> $GITHUB_ENV
           echo "NPM_DISPLAY_NAME=$(npm pkg get displayName | tr -d '"')" >> $GITHUB_ENV
       - name: Log in to the container registry
@@ -54,7 +56,9 @@ jobs:
           context: .
           push: true
           target: production
-          build-args: NPM_VERSION=${{ env.NPM_VERSION }}
+          build-args: |
+            NPM_VERSION=${{ env.NPM_VERSION }}
+            GIT_REVISION=${{ env.GIT_REVISION }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.version=${{ env.NPM_VERSION }}

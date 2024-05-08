@@ -5,6 +5,7 @@ set -u
 
 ( : $HSWS_PORT ) 
 ( : $HSWS_VERSION )
+( : $HSWS_REVISION )
 ( : $HSWS_LOG_LEVEL )
 ( : $STSA_SMART_APP_ID ) 
 ( : $STSA_SMART_APP_CLIENT_ID ) 
