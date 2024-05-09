@@ -3,6 +3,8 @@ name: Publish Docker image
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
   release:
     types: [ released ]
     
@@ -10,7 +12,10 @@ concurrency:
   group: publish-image
 
 env:
+  IS_ON_TAG: ${{ github.ref_type == 'tag' }}
+  IS_ON_PR: ${{ github.event_name == 'pull_request' }}
   DOCKER_IMAGE: ghcr.io/${{ github.repository }}
+  DOCKER_PLATFORMS: linux/arm64/v8,linux/amd64
 
 jobs:
   build-and-push-image:
@@ -38,7 +43,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
         id: qemu
         with:
-          platforms: linux/arm64/v8,linux/amd64
+          platforms: ${{ env.DOCKER_PLATFORMS }}
       - name: Extract image metadata
         uses: docker/metadata-action@v5
         id: meta
@@ -47,29 +52,34 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v5
         id: push
+        env:
+          CACHE_FROM: type=registry,ref=${{ env.DOCKER_IMAGE }}:latest-cache
+          CACHE_TO: '${{ env.CACHE_FROM }},mode=max'
         with:
           context: .
-          push: true
-          sbom: true
           target: production
+          push: ${{ !env.IS_ON_PR }}
+          sbom: ${{ !env.IS_ON_PR }}
           tags: |
             ${{ steps.meta.outputs.tags }}
-            ${{ env.DOCKER_IMAGE }}:${{ github.ref_type == 'tag' && 'main' || 'latest' }}
+            ${{ env.DOCKER_IMAGE }}:${{ env.IS_ON_TAG && 'main' || 'latest' }}
           build-args: |
             GIT_REF=${{ github.ref_name }}
             GIT_SHA=${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          platforms: linux/arm64/v8,linux/amd64
-          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:latest-cache
-          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:latest-cache,mode=max
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          cache-from: ${{ !env.IS_ON_PR && env.CACHE_FROM }}
+          cache-to: ${{ !env.IS_ON_PR && env.CACHE_TO }}
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
+        if: ${{ !env.IS_ON_PR }}
         with:
           subject-name: ${{ env.DOCKER_IMAGE }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
       - name: Run deploy on Render workflow
+        if: ${{ !env.IS_ON_PR }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -79,5 +89,5 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /repos/${{ github.repository }}/dispatches \
             -f "event_type=deploy-render" \
-            -F "client_payload[deploy_run_name]=${{ github.event.head_commit.message || github.event.release.tag_name }}" \
-            -F "client_payload[deploy_revision]=${{ github.sha }}"
+            -F "client_payload[deploy_revision]=${{ github.sha }}" \
+            -F "client_payload[deploy_run_name]=${{ env.IS_ON_TAG && github.event.release.tag_name || github.event.head_commit.message }}"
