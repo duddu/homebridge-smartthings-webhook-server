@@ -16,5 +16,5 @@
     "strictPropertyInitialization": true,
     "target": "ES2022"
   },
-  "exclude": ["jest.config.ts", "**/*.spec.ts", "**/*.mock.ts"]
+  "exclude": ["**/*.spec.ts", "**/*.mock.ts"]
 }

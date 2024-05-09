@@ -1,0 +1,18 @@
+{
+  "clearMocks": true,
+  "collectCoverage": true,
+  "coverageDirectory": "coverage",
+  "coveragePathIgnorePatterns": ["**/*.mock.ts", "/node_modules/"],
+  "coverageProvider": "v8",
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "transform": {
+    "^.+\\.spec\\.ts$": [
+      "ts-jest",
+      {
+        "tsconfig": "test/tsconfig.test.json"
+      }
+    ]
+  },
+  "verbose": true
+}

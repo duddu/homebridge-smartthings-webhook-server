@@ -1,6 +1,6 @@
 name: Deploy on Render
 
-run-name: ${{ github.event.client_payload.commit_message }}
+run-name: ${{ github.event.client_payload.git_commit_msg }}
 
 on:
   repository_dispatch:
