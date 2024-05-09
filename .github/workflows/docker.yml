@@ -9,7 +9,7 @@ on:
     types: [ released ]
     
 concurrency:
-  group: publish-image
+  group: docker-${{ github.ref_name }}
 
 env:
   IS_ON_TAG: ${{ github.ref_type == 'tag' }}
@@ -58,6 +58,7 @@ jobs:
         with:
           context: .
           target: production
+          load: ${{ env.IS_ON_PR }}
           push: ${{ !env.IS_ON_PR }}
           sbom: ${{ !env.IS_ON_PR }}
           tags: |
@@ -69,7 +70,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
-          cache-from: ${{ !env.IS_ON_PR && env.CACHE_FROM }}
+          cache-from: ${{ env.CACHE_FROM }}
           cache-to: ${{ !env.IS_ON_PR && env.CACHE_TO }}
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
