@@ -7,7 +7,7 @@
   "editor.rulers": [100],
   "files.autoSave": "off",
   "files.eol": "\n",
-  "vs-code-prettier-eslint.prettierLast": false,
+  "vs-code-prettier-eslint.prettierLast": true,
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.tabSize": 2
 }
