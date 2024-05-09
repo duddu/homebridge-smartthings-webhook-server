@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Trigger deploy
+    name: Deploy
     runs-on: ubuntu-latest
     env:
       VERSION_URL: https://${{ vars.RENDER_CUSTOM_DOMAIN }}/version
@@ -19,15 +19,16 @@ jobs:
       name: duddu.dev
       url: ${{ env.VERSION_URL }}
     steps:
-      - name: Invoke Render webhook
+      - name: Invoke Render hook
         timeout-minutes: 1
-        run: curl -fs https://api.render.com/deploy/${{ secrets.RENDER_PROJECT_ID }}?key=${{ secrets.RENDER_DEPLOY_KEY }}
+        run: curl -fs https://api.render.com/deploy/${{ secrets.RENDER_PROJECT_ID }}?key=${{ secrets.RENDER_DEPLOY_KEY }} >/dev/null
       - name: Verify deployed version
         timeout-minutes: 5
         run: |
-          while curl -fs ${{ env.VERSION_URL }} | grep ${{ github.event.client_payload.git_rev_short }} >& /dev/null; [[ $? -ne 0 ]];
+          while curl -fs ${{ env.VERSION_URL }} | grep "${{ github.event.client_payload.git_rev_short }}" &>/dev/null; [[ $? -ne 0 ]];
           do
             echo "Waiting for deployment..."
-            sleep 20
+            sleep 10
           done
-          echo "Version health check succeded"
+          echo
+          echo "Version healthcheck succeded! Deployed revision: ${{ github.event.client_payload.git_rev_short }}"
