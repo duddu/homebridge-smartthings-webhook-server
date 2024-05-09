@@ -23,10 +23,10 @@ FROM node:lts-alpine as production
 ARG APP_DIR
 WORKDIR ${APP_DIR}
 
-ARG GIT_TAG
+ARG GIT_REF
 ARG GIT_SHA
 
-ENV HSWS_VERSION=${GIT_TAG}
+ENV HSWS_VERSION=${GIT_REF}
 ENV HSWS_REVISION=${GIT_SHA}
 
 COPY --from=builder --chown=node:node ${APP_DIR}/bin/entrypoint.sh /usr/bin/
