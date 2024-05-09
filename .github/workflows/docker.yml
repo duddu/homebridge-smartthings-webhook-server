@@ -52,10 +52,12 @@ jobs:
           push: true
           sbom: true
           target: production
+          tags:
+            ${{ steps.meta.outputs.tags }}
+            '${{ env.DOCKER_IMAGE }}:${{ github.ref_type == 'tag' && 'main' || 'latest' }}'
           build-args: |
             GIT_REF=${{ github.ref_name }}
             GIT_SHA=${{ github.sha }}
-          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           platforms: linux/arm64/v8,linux/amd64
@@ -70,7 +72,6 @@ jobs:
       - name: Run deploy on Render workflow
         env:
           GH_TOKEN: ${{ github.token }}
-          GIT_COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           gh api \
             --method POST \
@@ -78,5 +79,5 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /repos/${{ github.repository }}/dispatches \
             -f "event_type=deploy-render" \
-            -F "client_payload[git_commit_msg]=$GIT_COMMIT_MSG" \
-            -F "client_payload[git_revision]=${{ github.sha }}"
+            -F "client_payload[deploy_run_name]=${{ github.event.head_commit.message || github.event.release.tag_name }}" \
+            -F "client_payload[deploy_revision]=${{ github.sha }}"
