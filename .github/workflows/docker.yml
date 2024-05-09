@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Build Docker image
 
 on:
   push:
@@ -17,8 +17,8 @@ env:
   DOCKER_PLATFORMS: linux/arm64/v8,linux/amd64
 
 jobs:
-  build-and-push-image:
-    name: Build and push image
+  docker:
+    name: ${{ github.event_name == 'pull_request' && 'Build' || 'Publish' }} image
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -50,7 +50,7 @@ jobs:
         id: meta
         with:
           images: ${{ env.DOCKER_IMAGE }}
-      - name: Build and push image
+      - name: Build${{ github.event_name != 'pull_request' && ' and push' || '' }} image
         uses: docker/build-push-action@v5
         id: push
         env:
