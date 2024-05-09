@@ -9,8 +9,8 @@ on:
     types: [ released ]
     
 concurrency:
-  group: docker-${{ github.ref_name }}
-  cancel-in-progress: true
+  group: docker-${{ github.ref_type == 'tag' && 'main' || github.ref_name }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 env:
   DOCKER_IMAGE: ghcr.io/${{ github.repository }}
