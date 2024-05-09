@@ -52,12 +52,10 @@ jobs:
           push: true
           sbom: true
           target: production
-          tags:
-            ${{ steps.meta.outputs.tags }}
-            ${{ env.DOCKER_IMAGE }}:latest
           build-args: |
             GIT_REF=${{ github.ref_name }}
             GIT_SHA=${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           platforms: linux/arm64/v8,linux/amd64
