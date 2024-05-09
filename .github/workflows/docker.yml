@@ -71,7 +71,7 @@ jobs:
           annotations: ${{ steps.meta.outputs.annotations }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           cache-from: ${{ format(env.CACHE_SRC, '') }}
-          cache-to: ${{ github.event_name != 'pull_request' && format(env.CACHE_SRC, ',mode=max') }}
+          cache-to: ${{ github.event_name != 'pull_request' && format(env.CACHE_SRC, ',mode=max') || '' }}
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
         if: ${{ github.event_name != 'pull_request' }}
