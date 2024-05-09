@@ -53,8 +53,7 @@ jobs:
         uses: docker/build-push-action@v5
         id: push
         env:
-          CACHE_FROM: type=registry,ref=${{ env.DOCKER_IMAGE }}:latest-cache
-          CACHE_TO: '${{ env.CACHE_FROM }},mode=max'
+          CACHE_SRC: 'type=registry,ref=${{ env.DOCKER_IMAGE }}:latest-cache{0}'
         with:
           context: .
           target: production
@@ -70,8 +69,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
-          cache-from: ${{ env.CACHE_FROM }}
-          cache-to: ${{ github.event_name != 'pull_request' && env.CACHE_TO }}
+          cache-from: ${{ format(env.CACHE_SRC, '') }}
+          cache-to: ${{ github.event_name != 'pull_request' && format(env.CACHE_SRC, ',mode=max') }}
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
         if: ${{ github.event_name != 'pull_request' }}
