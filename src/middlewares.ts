@@ -6,7 +6,7 @@ import {
 } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
 
 import { constants } from './constants';
-import { devices } from './devices';
+import { subscribeInstalledApps } from './devices';
 import { eventsCaches } from './events';
 import { logger } from './logger';
 import { smartApp } from './smartapp';
@@ -66,7 +66,7 @@ export const rateLimitMiddleware = slowDown({
 export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res) => {
   const events = eventsCaches.getCache(res.locals.authToken).flushEvents();
 
-  await devices.subscribeAllInstalledApps(new Set(req.body.deviceIds));
+  await subscribeInstalledApps(new Set(req.body.deviceIds));
 
   res.status(200).json({ timeout: false, events });
 };

@@ -9,7 +9,7 @@ import {
   rateLimitMiddleware,
   versionMiddleware,
   webhookMiddleware,
-} from './middleware';
+} from './middlewares';
 
 const PATH_HEALTH = '/healthz';
 const PATH_VERSION = '/version';
