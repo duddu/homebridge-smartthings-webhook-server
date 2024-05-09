@@ -18,7 +18,7 @@ env:
 
 jobs:
   docker:
-    name: ${{ github.event_name == 'pull_request' && 'Build' || 'Publish' }} image
+    name: Build${{ github.event_name != 'pull_request' && ' and publish' || '' }} image
     runs-on: ubuntu-latest
     permissions:
       contents: write
