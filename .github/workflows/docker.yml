@@ -3,8 +3,9 @@ name: Publish Docker image
 on:
   push:
     branches: [ main ]
-    tags: [ 'v[0-9]+.[0-9]+.[0-9]+' ]
-
+  release:
+    types: [ released ]
+    
 concurrency:
   group: publish-image
 
@@ -21,8 +22,6 @@ jobs:
       id-token: write
       attestations: write
     env:
-      GIT_REV_SHORT:
-      GIT_LATEST_TAG:
       NPM_DISPLAY_NAME:
     steps:
       - name: Checkout repository
@@ -31,15 +30,13 @@ jobs:
           fetch-depth: 1
       - name: Set environment variables
         run: |
-          echo "GIT_REV_SHORT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-          echo "GIT_LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))" >> "$GITHUB_ENV"
           echo "NPM_DISPLAY_NAME=$(npm pkg get displayName | tr -d '"')" >> "$GITHUB_ENV"
       - name: Determine image tags
         id: determine-tags
         run: |
           git fetch origin 'refs/tags/*:refs/tags/*'
           TAGS="${{ env.DOCKER_IMAGE }}:latest"
-          [[ ${{ github.ref_type }} == tag ]] && TAGS="$TAGS ${{ env.DOCKER_IMAGE }}:${{ env.GIT_LATEST_TAG }}"
+          [[ ${{ github.ref_type }} == tag ]] && TAGS="$TAGS ${{ env.DOCKER_IMAGE }}:${{ github.ref_name }}"
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
       - name: Log in to the container registry
         uses: docker/login-action@v3
@@ -69,16 +66,16 @@ jobs:
           target: production
           tags: ${{ steps.determine-tags.outputs.tags }}
           build-args: |
-            GIT_LATEST_TAG=${{ env.GIT_LATEST_TAG }}
-            GIT_REV_SHORT=${{ env.GIT_REV_SHORT }}
+            GIT_TAG=${{ github.ref_name }}
+            GIT_SHA=${{ github.sha }}
           labels: |
             ${{ steps.meta.outputs.labels }}
-            org.opencontainers.image.version=${{ env.GIT_LATEST_TAG }}
-            org.opencontainers.image.description="${{ env.NPM_DISPLAY_NAME }} (v${{ env.GIT_LATEST_TAG}} - ${{ env.GIT_REV_SHORT }})"
+            org.opencontainers.image.version=${{ github.ref_name }}
+            org.opencontainers.image.description="${{ env.NPM_DISPLAY_NAME }} (${{ github.ref_name }})"
           annotations: |
             ${{ steps.meta.outputs.annotations }}
-            org.opencontainers.image.version=${{ env.GIT_LATEST_TAG }}
-            org.opencontainers.image.description="${{ env.NPM_DISPLAY_NAME }} (v${{ env.GIT_LATEST_TAG}} - ${{ env.GIT_REV_SHORT }})"
+            org.opencontainers.image.version=${{ github.ref_name }}
+            org.opencontainers.image.description="${{ env.NPM_DISPLAY_NAME }} (${{ github.ref_name }})"
           platforms: linux/arm64/v8,linux/amd64
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:latest-cache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:latest-cache,mode=max
@@ -100,4 +97,4 @@ jobs:
             /repos/${{ github.repository }}/dispatches \
             -f "event_type=deploy-render" \
             -F "client_payload[git_commit_msg]=$GIT_COMMIT_MSG" \
-            -F "client_payload[git_rev_short]=$GIT_REV_SHORT"
+            -F "client_payload[git_revision]=${{ github.sha }}"

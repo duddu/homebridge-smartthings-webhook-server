@@ -25,10 +25,10 @@ jobs:
       - name: Verify deployed version
         timeout-minutes: 5
         run: |
-          while curl -fs ${{ env.VERSION_URL }} | grep "${{ github.event.client_payload.git_rev_short }}" &>/dev/null; [[ $? -ne 0 ]];
+          while curl -fs ${{ env.VERSION_URL }} | grep "${{ github.event.client_payload.git_revision }}" &>/dev/null; [[ $? -ne 0 ]];
           do
             echo "Waiting for deployment..."
             sleep 10
           done
           echo
-          echo "Version healthcheck succeded! Deployed revision: ${{ github.event.client_payload.git_rev_short }}"
+          echo "Version healthcheck succeded! Deployed revision: ${{ github.event.client_payload.git_revision }}"
