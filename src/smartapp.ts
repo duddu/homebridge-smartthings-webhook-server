@@ -1,7 +1,7 @@
 import { SmartApp } from '@smartthings/smartapp';
 
 import { constants } from './constants';
-import { contextsCache } from './context';
+import { contextsCache } from './contexts';
 import { eventsCaches } from './events';
 import { logger, smartAppLogger } from './logger';
 

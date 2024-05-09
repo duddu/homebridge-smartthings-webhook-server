@@ -30,23 +30,15 @@ class HSWSSmartAppContextsCache {
         refreshToken,
       };
       const context = await smartApp.withContext(contextRecord);
-      const subscriptions = await context.api.subscriptions.list();
-      const subscribedDevicesIds = new Set<string>(
-        subscriptions
-          .map(({ device }) => device?.deviceId)
-          .filter((deviceId): deviceId is string => typeof deviceId === 'string'),
-      );
       if (
         !this.contexts.set<HSWSSmartAppContextsCacheItem>(installedAppId, {
           context,
-          subscribedDevicesIds,
+          subscribedDevicesIds: new Set<string>(),
         })
       ) {
         throw new Error(`Unable to set the value for cache key ${installedAppId}`);
       }
-      logger.debug(`Stored smart app context for installedAppId ${installedAppId}`, {
-        subscribedDevicesIdsSize: subscribedDevicesIds.size,
-      });
+      logger.debug(`Stored smart app context for installedAppId ${installedAppId}`);
     } catch (error) {
       logger.error(
         `Unable to store smart app context for installedAppId ${installedAppId}. ` +
