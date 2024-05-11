@@ -31,3 +31,5 @@ export const server = express()
   .post(PATH_API, smartAppWebhookMiddleware)
   .post(PATH_CLIENTREQUEST, webhookTokenMiddleware, rateLimitMiddleware, clientRequestMiddleware)
   .listen(constants.HSWS_PORT, listenCallback);
+
+server.keepAliveTimeout = 120000;
