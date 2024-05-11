@@ -1,4 +1,4 @@
-import { ConfigValueType, InstalledAppConfiguration } from '@smartthings/core-sdk';
+import { InstalledAppConfiguration } from '@smartthings/core-sdk';
 import { Page, SmartApp, SmartAppContext } from '@smartthings/smartapp';
 import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
 import { Initialization } from '@smartthings/smartapp/lib/util/initialization';
@@ -83,7 +83,7 @@ const appInstalledCallback = async (
 
 const appUpdatedCallback = async (
   { api }: SmartAppContext,
-  { installedApp }: AppEvent.UpdateData,
+  { previousConfig, installedApp }: AppEvent.UpdateData,
 ): Promise<void> => {
   const { installedAppId } = installedApp;
 
@@ -95,20 +95,10 @@ const appUpdatedCallback = async (
     logger.debug(
       'appUpdatedCallback(): Configuration changed by the user. Resetting the value of ' +
         `${WEBHOOK_TOKEN_CONFIG_NAME} from ${configValue} back to ${installedAppId}`,
+      { previousConfig, updatedConfig: installedApp.config },
     );
 
-    await api.installedApps.updateConfiguration(installedAppId, {
-      config: {
-        [WEBHOOK_TOKEN_CONFIG_NAME]: [
-          {
-            valueType: ConfigValueType.STRING,
-            stringConfig: {
-              value: installedAppId,
-            },
-          },
-        ],
-      },
-    });
+    await api.installedApps.updateConfiguration(installedAppId, { config: previousConfig });
   }
 };
 
@@ -153,3 +143,4 @@ export const smartApp = new SmartApp()
   .updated(appUpdatedCallback)
   .uninstalled(appUninstalledCallback)
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback);
+// .scheduledEventHandler('x', 9)
