@@ -30,7 +30,7 @@ ENV HSWS_VERSION=${GIT_REF}
 ENV HSWS_REVISION=${GIT_SHA}
 
 COPY --from=builder --chown=node:node ${APP_DIR}/bin/entrypoint.sh /usr/bin/
-COPY --from=builder --chown=node:node ${APP_DIR}/dist ./
+COPY --from=builder --chown=node:node ${APP_DIR}/dist ${APP_DIR}/LICENSE ./
 
 USER node
 
