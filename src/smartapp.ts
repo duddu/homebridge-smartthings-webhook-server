@@ -1,6 +1,7 @@
 import { InstalledAppConfiguration } from '@smartthings/core-sdk';
 import { Page, SmartApp, SmartAppContext } from '@smartthings/smartapp';
 import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
+import { Initialization } from '@smartthings/smartapp/lib/util/initialization';
 import { v4 as uuidv4 } from 'uuid';
 
 import { constants } from './constants';
@@ -25,11 +26,33 @@ const DEFAULT_PAGE_TITLE = 'SmartApp Installation';
 const SMART_APP_PERMISSIONS = ['r:devices:*', 'r:locations:*'];
 const EVENT_LOGGING_ENABLED = logger.level === 'silly';
 
+const appInitializedCallback = (
+  context: SmartAppContext,
+  _initialization: Initialization,
+  configData: AppEvent.ConfigurationData,
+): void => {
+  logger.debug('SmartApp initialized');
+  logger.debug('appInitializedCallback()', {
+    'context.api.installedApps.installedAppId': context.api.installedApps.installedAppId,
+    'context.api.apps.installedAppId': context.api.apps.installedAppId,
+    'context.api.config.installedAppId': context.api.config.installedAppId,
+    'configData.installedAppId': configData.installedAppId,
+    'configData.phase': configData.phase,
+  });
+};
+
 const appInstalledCallback = async (
   { api }: SmartAppContext,
   { installedApp }: AppEvent.InstallData,
 ): Promise<void> => {
   logger.debug('SmartApp installed');
+  logger.debug('appInitializedCallback()', {
+    'context.api.installedApps.installedAppId': api.installedApps.installedAppId,
+    'context.api.apps.installedAppId': api.apps.installedAppId,
+    'context.api.config.installedAppId': api.config.installedAppId,
+    'installedApp.installedAppId': installedApp.installedAppId,
+    'installedApp.config': installedApp.config,
+  });
   await api.subscriptions.delete();
   store.initCache(
     getWebhookTokenFromConfig(installedApp.config),
@@ -46,16 +69,32 @@ const appUninstalledCallback = async (
   store.clearCache(getWebhookTokenFromConfig(installedApp.config));
 };
 
+// const appUpdatedCallback = async (
+//   _context: SmartAppContext,
+//   { previousConfig, installedApp }: AppEvent.UpdateData,
+// ): Promise<void> => {
+//   logger.debug('SmartApp updated');
+//   // if
+//   store.clearCache(getWebhookTokenFromConfig(installedApp.config));
+// };
+
 const deviceEventCallback = ({ config }: SmartAppContext, event: AppEvent.DeviceEvent): void => {
   logger.debug('Device event received', event);
   storeDeviceEvent(getWebhookTokenFromConfig(config), event);
 };
 
 const defaultPageCallback = (
-  _context: SmartAppContext,
+  context: SmartAppContext,
   page: Page,
   configData?: InstalledAppConfiguration,
 ): void => {
+  logger.debug('defaultPageCallback()', {
+    'context.api.installedApps.installedAppId': context.api.installedApps.installedAppId,
+    'context.api.apps.installedAppId': context.api.apps.installedAppId,
+    'context.api.config.installedAppId': context.api.config.installedAppId,
+    'configData.installedAppId': configData?.installedAppId,
+    'configData.configurationStatus': configData?.configurationStatus,
+  });
   page.name(DEFAULT_PAGE_TITLE);
   page.section(WEBHOOK_TOKEN_CONFIG_DESCRIPTION, (section) => {
     section
@@ -80,10 +119,10 @@ const getWebhookTokenDefault = (configData?: InstalledAppConfiguration): string 
 const getWebhookTokenFromConfig = (config: AppEvent.ConfigMap): string => {
   try {
     const webhookToken = config[WEBHOOK_TOKEN_CONFIG_NAME][0]?.stringConfig?.value as string;
-    if (typeof webhookToken !== 'string' || webhookToken === '') {
+    if (typeof webhookToken !== 'string' || webhookToken.trim() === '') {
       throw new Error('WebhookToken value is not a valid string');
     }
-    return webhookToken;
+    return webhookToken.trim();
   } catch (error) {
     logger.error('smartApp: Unable to retrieve webhookToken from app config', { config, error });
     throw error;
@@ -98,7 +137,8 @@ export const smartApp = new SmartApp()
   .clientSecret(constants.STSA_SMART_APP_CLIENT_SECRET)
   .permissions(SMART_APP_PERMISSIONS)
   .defaultPage(defaultPageCallback)
-  // .updated() @TODO if webhookToken changed (no, do it anyway, maybe no clear events) clear+init
+  .initialized(appInitializedCallback)
   .installed(appInstalledCallback)
+  // .updated() @TODO if webhookToken changed clear old +init new
   .uninstalled(appUninstalledCallback)
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback);
