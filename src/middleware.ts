@@ -4,15 +4,16 @@ import {
   RequestBody,
   ResponseBody,
 } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
+import { stringify } from 'safe-stable-stringify';
 
 import { constants } from './constants';
-import { subscribeInstalledApps } from './devices';
-import { eventsCaches } from './events';
+import { ensureSubscriptions } from './subscriptions';
+import { flushDevicesEvents } from './events';
 import { logger } from './logger';
 import { smartApp } from './smartapp';
 
 interface HSWSExpressLocals extends Record<string, unknown> {
-  authToken: string;
+  webhookToken: string;
 }
 
 type HSWSClientRequestHandler = RequestHandler<
@@ -35,12 +36,12 @@ export const versionMiddleware: RequestHandler = (_req, res) => {
   });
 };
 
-export const webhookMiddleware: RequestHandler = (req, res) => {
+export const smartAppWebhookMiddleware: RequestHandler = (req, res) => {
   smartApp.handleHttpCallback(req, res);
 };
 
-export const authTokenMiddleware: HSWSClientRequestHandler = (req, res, next) => {
-  const bearer = req.header('Authorization')?.replace('Bearer:', '').trim();
+export const webhookTokenMiddleware: HSWSClientRequestHandler = (req, res, next) => {
+  const bearer = req.get('Authorization')?.replace('Bearer:', '').trim();
 
   if (typeof bearer !== 'string' || bearer === '') {
     logger.error('Unable to retrieve bearer token from request headers');
@@ -48,7 +49,7 @@ export const authTokenMiddleware: HSWSClientRequestHandler = (req, res, next) =>
     return;
   }
 
-  res.locals.authToken = bearer;
+  res.locals.webhookToken = bearer;
 
   next();
 };
@@ -60,13 +61,35 @@ export const rateLimitMiddleware = slowDown({
   maxDelayMs: 800,
   skipFailedRequests: true,
   validate: { xForwardedForHeader: false },
-  keyGenerator: (_req, res) => (res.locals as HSWSExpressLocals).authToken,
+  keyGenerator: (_req, res) => (res.locals as HSWSExpressLocals).webhookToken,
 });
 
 export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res) => {
-  const events = eventsCaches.getCache(res.locals.authToken).flushEvents();
+  const { webhookToken } = res.locals;
+  const { deviceIds } = req.body;
 
-  await subscribeInstalledApps(new Set(req.body.deviceIds));
+  if (!Array.isArray(deviceIds)) {
+    const message = 'Request body deviceIds field absent or malformed';
+    logger.error(`clientRequestMiddleware(): ${message}`, { deviceIds });
 
-  res.status(200).json({ timeout: false, events });
+    res.status(400).write(message);
+    res.end();
+
+    return;
+  }
+
+  try {
+    await ensureSubscriptions(webhookToken, deviceIds);
+
+    const events = flushDevicesEvents(webhookToken);
+
+    res.status(200).json({ timeout: false, events }); // @TODO keep-alive and timeout
+  } catch (e) {
+    logger.error(e);
+
+    res.status(500).write(e instanceof Error ? e.message : stringify(e));
+    res.end();
+
+    return;
+  }
 };

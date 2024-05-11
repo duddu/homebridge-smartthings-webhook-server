@@ -5,38 +5,27 @@ import {
   Subscription,
   SubscriptionSource,
 } from '@smartthings/core-sdk';
-import { SmartAppContext } from '@smartthings/smartapp';
 
-import { contextsCache, HSWSSmartAppContextsCacheItem } from './contexts';
 import { logger } from './logger';
 import { DEVICE_EVENT_HANDLER_NAME } from './smartapp';
+import { HSWSSubscriptionsContext, store } from './store';
 
-export const subscribeInstalledApps = async (
-  registeredDevicesIds: Set<string>,
-): Promise<void[][]> =>
-  Promise.all(
-    contextsCache
-      .getAllContexts()
-      .map((contextCacheItem) => subscribeInstalledApp(contextCacheItem, registeredDevicesIds)),
-  );
-
-const subscribeInstalledApp = async (
-  { context, subscribedDevicesIds }: HSWSSmartAppContextsCacheItem,
-  registeredDevicesIds: Set<string>,
-): Promise<void[]> =>
-  Promise.all(
-    [subscribeToRegisteredDevices, unsubscribeFromRemovedDevices].map((fn) =>
-      fn.call(null, context, subscribedDevicesIds, registeredDevicesIds),
-    ),
-  );
+export const ensureSubscriptions = async (
+  webhookToken: string,
+  registeredDevicesIdsList: string[],
+): Promise<void> => {
+  const registeredDevicesIds = new Set(registeredDevicesIdsList);
+  const subscriptionsContext = store.getSubscriptionsContext(webhookToken);
+  await Promise.all([
+    subscribeToRegisteredDevices(registeredDevicesIds, subscriptionsContext),
+    unsubscribeFromRemovedDevices(registeredDevicesIds, subscriptionsContext),
+  ]);
+};
 
 const subscribeToRegisteredDevices = async (
-  context: SmartAppContext,
-  subscribedDevicesIds: Set<string>,
   registeredDevicesIds: Set<string>,
-) => {
-  const { installedAppId } = context.api.apps;
-  const { subscriptions } = context.api;
+  { installedAppId, subscriptionsEndpoint, subscribedDevicesIds }: HSWSSubscriptionsContext,
+): Promise<void> => {
   const unsubscribedDevicesIds = registeredDevicesIds;
   if (subscribedDevicesIds.size > 0) {
     for (const id of unsubscribedDevicesIds) {
@@ -48,14 +37,14 @@ const subscribeToRegisteredDevices = async (
   if (unsubscribedDevicesIds.size === 0) {
     return;
   }
-  logger.debug('Received new registered devices to subscribe to', {
+  logger.debug('subscribeToRegisteredDevices(): Received new registered devices to subscribe to', {
     installedAppId,
     clientDevicesCount: registeredDevicesIds.size,
     subscribedDevicesCount: subscribedDevicesIds.size,
     unsubscribedDevicesCount: unsubscribedDevicesIds.size,
   });
   try {
-    await subscriptions.subscribeToDevices(
+    await subscriptionsEndpoint.subscribeToDevices(
       getDevicesConfigEntries(unsubscribedDevicesIds),
       '*',
       '*',
@@ -63,7 +52,8 @@ const subscribeToRegisteredDevices = async (
     );
   } catch (error) {
     logger.error(
-      `Unable to subscribe installed app ${installedAppId} to registered devices events`,
+      'subscribeToRegisteredDevices(): Unable to subscribe installed app ' +
+        `${installedAppId} to registered devices events`,
       error,
     );
     return;
@@ -71,7 +61,7 @@ const subscribeToRegisteredDevices = async (
   for (const id of unsubscribedDevicesIds) {
     subscribedDevicesIds.add(id);
   }
-  logger.debug('Subscribed to new registered devices events', {
+  logger.debug('subscribeToRegisteredDevices(): Subscribed to new registered devices events', {
     installedAppId,
     subscribedDevicesCount: subscribedDevicesIds.size,
   });
@@ -84,12 +74,9 @@ interface HSWSDeviceSubscription extends Subscription {
 }
 
 const unsubscribeFromRemovedDevices = async (
-  context: SmartAppContext,
-  subscribedDevicesIds: Set<string>,
   registeredDevicesIds: Set<string>,
-) => {
-  const { installedAppId } = context.api.apps;
-  const { subscriptions } = context.api;
+  { installedAppId, subscriptionsEndpoint, subscribedDevicesIds }: HSWSSubscriptionsContext,
+): Promise<void> => {
   const removedDevicesIds = new Set<string>();
   for (const id of subscribedDevicesIds) {
     if (!registeredDevicesIds.has(id)) {
@@ -99,7 +86,7 @@ const unsubscribeFromRemovedDevices = async (
   if (removedDevicesIds.size === 0) {
     return;
   }
-  logger.debug('Received new devices to unsubscribe from', {
+  logger.debug('unsubscribeFromRemovedDevices(): Received new devices to unsubscribe from', {
     installedAppId,
     clientDevicesCount: registeredDevicesIds.size,
     subscribedDevicesCount: subscribedDevicesIds.size,
@@ -107,7 +94,7 @@ const unsubscribeFromRemovedDevices = async (
   });
   try {
     await Promise.all(
-      (await subscriptions.list())
+      (await subscriptionsEndpoint.list())
         .filter(
           (subscription): subscription is HSWSDeviceSubscription =>
             typeof subscription.id === 'string' &&
@@ -115,18 +102,19 @@ const unsubscribeFromRemovedDevices = async (
         )
         .filter(({ device }) => removedDevicesIds.has(device.deviceId))
         .map(async ({ id, device }) => {
-          await subscriptions.delete(id);
+          await subscriptionsEndpoint.delete(id);
           subscribedDevicesIds.delete(device.deviceId);
         }),
     );
   } catch (error) {
     logger.error(
-      `Unable to unsubscribe installed app ${installedAppId} from removed devices events`,
+      'unsubscribeFromRemovedDevices(): Unable to unsubscribe installed app ' +
+        `${installedAppId} from unregistered devices events`,
       error,
     );
     return;
   }
-  logger.debug('Unsubscribed from removed devices events', {
+  logger.debug('unsubscribeFromRemovedDevices(): Unsubscribed from unregistered devices events', {
     installedAppId,
     subscribedDevicesCount: subscribedDevicesIds.size,
   });
