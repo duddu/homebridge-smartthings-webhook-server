@@ -10,7 +10,6 @@ import { store } from './store';
 
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
 const WEBHOOK_TOKEN_CONFIG_NAME = 'WebhookToken';
-const WEBHOOK_TOKEN_CONFIG_LABEL = 'Webhook Token';
 const WEBHOOK_TOKEN_CONFIG_DESCRIPTION =
   'Copy this value in the Webhook Token field of your Homebridge SmartThings plugin configuration:';
 const WEBHOOK_TOKEN_CONFIG_INFO_TITLE = 'MORE INFO';
@@ -60,7 +59,7 @@ const defaultPageCallback = (
   page.name(DEFAULT_PAGE_TITLE);
   page.section(WEBHOOK_TOKEN_CONFIG_DESCRIPTION, (section) => {
     section
-      .textSetting(WEBHOOK_TOKEN_CONFIG_LABEL)
+      .textSetting(WEBHOOK_TOKEN_CONFIG_NAME)
       .name(WEBHOOK_TOKEN_CONFIG_NAME)
       .defaultValue(getWebhookTokenDefault(configData))
       .required(true);
@@ -99,7 +98,7 @@ export const smartApp = new SmartApp()
   .clientSecret(constants.STSA_SMART_APP_CLIENT_SECRET)
   .permissions(SMART_APP_PERMISSIONS)
   .defaultPage(defaultPageCallback)
-  // .updated() @TODO if webhookToken changed clear+init cache
+  // .updated() @TODO if webhookToken changed (no, do it anyway, maybe no clear events) clear+init
   .installed(appInstalledCallback)
   .uninstalled(appUninstalledCallback)
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback);
