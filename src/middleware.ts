@@ -7,10 +7,11 @@ import {
 import { stringify } from 'safe-stable-stringify';
 
 import { constants } from './constants';
-import { ensureSubscriptions } from './subscriptions';
 import { flushDevicesEvents } from './events';
 import { logger } from './logger';
+import { server } from './server';
 import { smartApp } from './smartapp';
+import { ensureSubscriptions } from './subscriptions';
 
 interface HSWSExpressLocals extends Record<string, unknown> {
   webhookToken: string;
@@ -65,30 +66,47 @@ export const rateLimitMiddleware = slowDown({
 });
 
 export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res) => {
-  const { webhookToken } = res.locals;
-  const { deviceIds } = req.body;
+  const { deviceIds, timeout } = req.body;
 
   if (!Array.isArray(deviceIds)) {
     const message = 'Request body deviceIds field absent or malformed';
     logger.error(`clientRequestMiddleware(): ${message}`, { deviceIds });
 
-    res.status(400).write(message);
-    res.end();
+    res.status(400).end(message);
 
     return;
   }
 
+  if (typeof timeout !== 'number') {
+    const message = 'Request body timeout field absent or malformed';
+    logger.error(`clientRequestMiddleware(): ${message}`, { timeout });
+
+    res.status(400).end(message);
+
+    return;
+  }
+
+  server.setTimeout(timeout);
+
+  const reqKeepAlive = req.get('Keep-Alive');
+
+  if (typeof reqKeepAlive === 'string' && reqKeepAlive.trim() !== '') {
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Keep-Alive', reqKeepAlive.trim());
+  }
+
   try {
+    const { webhookToken } = res.locals;
+
     await ensureSubscriptions(webhookToken, deviceIds);
 
     const events = flushDevicesEvents(webhookToken);
 
-    res.status(200).json({ timeout: false, events }); // @TODO keep-alive and timeout
+    res.status(200).json({ timeout: false, events });
   } catch (e) {
     logger.error(e);
 
-    res.status(500).write(e instanceof Error ? e.message : stringify(e));
-    res.end();
+    res.status(500).end(e instanceof Error ? e.message : stringify(e));
 
     return;
   }
