@@ -31,6 +31,13 @@ class HSWSCache<V> extends NodeCache implements HSWSICache<V> {
       useClones: false,
     });
   }
+
+  public chillSet = (key: string, value: V, overrideIfPresent: boolean): boolean => {
+    if (!overrideIfPresent && this.has(key)) {
+      return true;
+    }
+    return this.set(key, value);
+  };
 }
 
 class HSWSEventsQueuesCache extends HSWSCache<HSWSEventsQueue> {}
@@ -46,15 +53,20 @@ class HSWSStore {
     this.subscriptionsContexts = new HSWSSubscriptionsContextsCache(SUBSCRIPTION_CACHE_TTL);
   }
 
-  public initCache = (cacheKey: string, subscriptionsEndpoint: SubscriptionsEndpoint): void => {
+  public initCache = (
+    cacheKey: string,
+    subscriptionsEndpoint: SubscriptionsEndpoint,
+    overrideIfPresent = true,
+  ): void => {
     try {
-      if (!this.eventsQueues.set(cacheKey, new HSWSEventsQueue())) {
+      if (!this.eventsQueues.chillSet(cacheKey, new HSWSEventsQueue(), overrideIfPresent)) {
         throw HSWSEventsQueuesCache.name;
       }
       if (
-        !this.subscriptionsContexts.set(
+        !this.subscriptionsContexts.chillSet(
           cacheKey,
           new HSWSSubscriptionsContext(cacheKey, subscriptionsEndpoint),
+          overrideIfPresent,
         )
       ) {
         throw HSWSSubscriptionsContextsCache.name;

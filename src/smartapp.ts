@@ -9,6 +9,8 @@ import { logger, smartAppLogger } from './logger';
 import { store } from './store';
 
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
+const ENSURE_CACHE_SCHEDULE_HANDLER_NAME = 'HSWSScheduledEventHandler';
+const ENSURE_CACHE_SCHEDULE_INTERVAL_MIN = 10;
 const WEBHOOK_TOKEN_CONFIG_NAME = 'Webhook Token';
 const WEBHOOK_TOKEN_CONFIG_DESCRIPTION =
   'Copy this value in the Webhook Token field of your Homebridge SmartThings plugin configuration:';
@@ -76,9 +78,15 @@ const appInstalledCallback = async (
 
   logger.debug('appInstalledCallback(): SmartApp installed', { installedAppId });
 
-  await api.subscriptions.delete();
+  await Promise.all([api.subscriptions.delete(), api.schedules.delete()]);
 
   store.initCache(installedAppId, api.subscriptions);
+
+  await api.schedules.schedule(
+    ENSURE_CACHE_SCHEDULE_HANDLER_NAME,
+    `*/${ENSURE_CACHE_SCHEDULE_INTERVAL_MIN} * * * *`,
+    process.env.TZ,
+  );
 };
 
 const appUninstalledCallback = async (
@@ -109,6 +117,21 @@ const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEve
   storeDeviceEvent(installedAppId, event);
 };
 
+const ensureCacheScheduleCallback = ({ api }: SmartAppContext) => {
+  const { installedAppId } = api.config;
+
+  logger.debug('Ensure cache scheduled event received', { installedAppId });
+
+  if (typeof installedAppId !== 'string') {
+    logger.error(
+      'ensureCacheScheduleCallback(): Unable to ensure cache, installedAppId is not available',
+    );
+    return;
+  }
+
+  store.initCache(installedAppId, api.subscriptions, false);
+};
+
 export const smartApp = new SmartApp()
   .configureLogger(smartAppLogger)
   .enableEventLogging(2, EVENT_LOGGING_ENABLED)
@@ -120,5 +143,5 @@ export const smartApp = new SmartApp()
   .initialized(appInitializedCallback)
   .installed(appInstalledCallback)
   .uninstalled(appUninstalledCallback)
-  .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback);
-// .scheduledEventHandler('x', 9)
+  .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback)
+  .scheduledEventHandler(ENSURE_CACHE_SCHEDULE_HANDLER_NAME, ensureCacheScheduleCallback);
