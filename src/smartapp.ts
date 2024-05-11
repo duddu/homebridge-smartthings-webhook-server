@@ -1,4 +1,4 @@
-import { ConfigValueType, InstalledAppConfiguration } from '@smartthings/core-sdk';
+import { InstalledAppConfiguration } from '@smartthings/core-sdk';
 import { Page, SmartApp, SmartAppContext } from '@smartthings/smartapp';
 import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
 import { Initialization } from '@smartthings/smartapp/lib/util/initialization';
@@ -30,21 +30,9 @@ const EVENT_LOGGING_ENABLED = logger.level === 'silly';
 const appInitializedCallback = (
   _context: SmartAppContext,
   _initialization: Initialization,
-  { installedAppId, config }: AppEvent.ConfigurationData,
+  { installedAppId }: AppEvent.ConfigurationData,
 ): void => {
   logger.debug('appInitializedCallback(): SmartApp initialized', { installedAppId });
-
-  config[WEBHOOK_TOKEN_CONFIG_NAME] = [
-    { valueType: ConfigValueType.STRING, stringConfig: { value: installedAppId } },
-  ];
-
-  // await api.installedApps.updateConfiguration(installedAppId, {
-  //   config: {
-  //     [WEBHOOK_TOKEN_CONFIG_NAME]: [
-  //       { valueType: ConfigValueType.STRING, stringConfig: { value: installedAppId } },
-  //     ],
-  //   },
-  // });
 };
 
 const defaultPageCallback = (
@@ -60,22 +48,17 @@ const defaultPageCallback = (
     throw new Error(message);
   }
 
-  if (configData) {
-    configData.config[WEBHOOK_TOKEN_CONFIG_NAME] = {
-      valueType: ConfigValueType.STRING,
-      stringConfig: { value: installedAppId },
-    };
-  }
-
   logger.debug('defaultPageCallback(): Presenting user configuration page', { installedAppId });
 
   page.name(DEFAULT_PAGE_TITLE);
   page.section(WEBHOOK_TOKEN_CONFIG_DESCRIPTION, (section) => {
     section
-      .textSetting(WEBHOOK_TOKEN_CONFIG_NAME)
+      .textSetting(`${WEBHOOK_TOKEN_CONFIG_NAME}_${Date.now()}`)
       .name(WEBHOOK_TOKEN_CONFIG_NAME)
       .defaultValue(installedAppId)
-      .required(true);
+      .minLength(installedAppId.length)
+      .maxLength(installedAppId.length)
+      .required(false);
   });
   page.section(WEBHOOK_TOKEN_CONFIG_INFO_TITLE, (section) => {
     section
@@ -99,36 +82,6 @@ const appInstalledCallback = async (
 
   store.initCache(installedAppId, api.subscriptions);
 };
-
-// const appUpdatedCallback = async (
-//   _context: SmartAppContext,
-//   { previousConfig, installedApp }: AppEvent.UpdateData,
-// ): Promise<void> => {
-//   const { installedAppId } = installedApp;
-
-//   logger.debug('appUpdatedCallback(): SmartApp updated', { installedAppId });
-
-//   const configValue = installedApp.config[WEBHOOK_TOKEN_CONFIG_NAME]?.at(0)?.stringConfig?.value;
-
-//   if (configValue !== installedAppId) {
-//     logger.debug(
-//       'appUpdatedCallback(): Configuration changed by the user. Resetting the value of ' +
-//         `${WEBHOOK_TOKEN_CONFIG_NAME} from ${configValue} back to ${installedAppId}`,
-//       { previousConfig, updatedConfig: installedApp.config },
-//     );
-
-//     _context.
-//     const appContext = await smartApp.withContext({
-//       installedAppId,
-//       authToken,
-//       refreshToken,
-//     });
-
-//     await appContext.api.installedApps.updateConfiguration(installedAppId, {
-//       config: previousConfig,
-//     });
-//   }
-// };
 
 const appUninstalledCallback = async (
   _context: SmartAppContext,
@@ -168,7 +121,6 @@ export const smartApp = new SmartApp()
   .defaultPage(defaultPageCallback)
   .initialized(appInitializedCallback)
   .installed(appInstalledCallback)
-  // .updated(appUpdatedCallback)
   .uninstalled(appUninstalledCallback)
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback);
 // .scheduledEventHandler('x', 9)
