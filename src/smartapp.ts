@@ -9,7 +9,7 @@ import { logger, smartAppLogger } from './logger';
 import { store } from './store';
 
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
-const WEBHOOK_TOKEN_CONFIG_NAME = 'WebhookToken';
+const WEBHOOK_TOKEN_CONFIG_NAME = 'Webhook Token';
 const WEBHOOK_TOKEN_CONFIG_DESCRIPTION =
   'Copy this value in the Webhook Token field of your Homebridge SmartThings plugin configuration:';
 const WEBHOOK_TOKEN_CONFIG_INFO_TITLE = 'MORE INFO';
@@ -53,11 +53,9 @@ const defaultPageCallback = (
   page.name(DEFAULT_PAGE_TITLE);
   page.section(WEBHOOK_TOKEN_CONFIG_DESCRIPTION, (section) => {
     section
-      .textSetting(`${WEBHOOK_TOKEN_CONFIG_NAME}_${Date.now()}`)
+      .textSetting(`${WEBHOOK_TOKEN_CONFIG_NAME.replaceAll(' ', '')}_${Date.now()}`)
       .name(WEBHOOK_TOKEN_CONFIG_NAME)
       .defaultValue(installedAppId)
-      .minLength(installedAppId.length)
-      .maxLength(installedAppId.length)
       .required(false);
   });
   page.section(WEBHOOK_TOKEN_CONFIG_INFO_TITLE, (section) => {
