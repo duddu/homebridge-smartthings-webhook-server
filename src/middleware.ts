@@ -9,7 +9,6 @@ import { stringify } from 'safe-stable-stringify';
 import { constants } from './constants';
 import { flushDevicesEvents } from './events';
 import { logger } from './logger';
-import { server } from './server';
 import { smartApp } from './smartapp';
 import { ensureSubscriptions } from './subscriptions';
 
@@ -86,7 +85,11 @@ export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res
     return;
   }
 
-  server.setTimeout(timeout);
+  res.setTimeout(timeout, () => {
+    if (!res.headersSent) {
+      res.status(200).json({ timeout: true, events: [] });
+    }
+  });
 
   const reqKeepAlive = req.get('Keep-Alive');
 
