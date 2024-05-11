@@ -9,23 +9,20 @@ import { logger, smartAppLogger } from './logger';
 import { store } from './store';
 
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
-
 const WEBHOOK_TOKEN_CONFIG_NAME = 'WebhookToken';
-
 const WEBHOOK_TOKEN_CONFIG_DESCRIPTION =
   'Copy this value in the Webhook Token field of the Homebridge SmartThings plugin configuration.';
-
+const WEBHOOK_TOKEN_CONFIG_INFO_TITLE = 'MORE INFO';
 const WEBHOOK_TOKEN_CONFIG_INFO_HEADER = 'How is the Webhook Token used?';
-
 const WEBHOOK_TOKEN_CONFIG_INFO_TEXT =
-  'This unique identifier is auto-generated and remains associated with this specific ' +
-  'installed app, until uninstalled. This means you could have multiple child bridges of the ' +
-  'SmartThings plugin configured on your Homebridge (or multiple Homebridge instances), and ' +
-  'as long as each configuration links to a single installed app via this identifier, each one ' +
-  'of them can have a separate dedicated channel of communication with the same webhook server.';
-
+  'This unique identifier is auto-generated (no need to edit it) and remains associated with ' +
+  'this specific installed app, until it gets uninstalled. This means you could have multiple ' +
+  'child bridges of the SmartThings plugin configured on your Homebridge (or multiple Homebridge ' +
+  'instances), and as long as each configuration links to a single installed app via this ' +
+  'identifier, each one of them can have a separate dedicated channel of communication with the ' +
+  'same webhook server.';
+const DEFAULT_PAGE_TITLE = 'SmartApp Installation';
 const SMART_APP_PERMISSIONS = ['r:devices:*', 'r:locations:*'];
-
 const EVENT_LOGGING_ENABLED = logger.level === 'silly';
 
 const installedCallback = async (
@@ -60,20 +57,19 @@ const defaultPageCallback = (
   page: Page,
   configData?: InstalledAppConfiguration,
 ): void => {
-  page.name('Installation');
-  page.section('Config', (section) => {
+  page.name(DEFAULT_PAGE_TITLE);
+  page.section(WEBHOOK_TOKEN_CONFIG_DESCRIPTION, (section) => {
     section
       .textSetting(WEBHOOK_TOKEN_CONFIG_NAME)
       .name(WEBHOOK_TOKEN_CONFIG_NAME)
-      .description(WEBHOOK_TOKEN_CONFIG_DESCRIPTION)
       .defaultValue(getWebhookTokenDefault(configData))
-      .disabled(true);
+      .required(true);
   });
-  page.section('Info', (section) => {
+  page.section(WEBHOOK_TOKEN_CONFIG_INFO_TITLE, (section) => {
     section
       .hideable(true)
       .hidden(false)
-      .paragraphSetting('WebhookTokenInfo')
+      .paragraphSetting(WEBHOOK_TOKEN_CONFIG_INFO_HEADER)
       .name(WEBHOOK_TOKEN_CONFIG_INFO_HEADER)
       .description(WEBHOOK_TOKEN_CONFIG_INFO_TEXT);
   });
@@ -103,6 +99,7 @@ export const smartApp = new SmartApp()
   .clientSecret(constants.STSA_SMART_APP_CLIENT_SECRET)
   .permissions(SMART_APP_PERMISSIONS)
   .defaultPage(defaultPageCallback)
+  // .updated() @TODO if webhookToken changed clear+init cache
   .installed(installedCallback)
   .uninstalled(uninstalledCallback)
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback);
