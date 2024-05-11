@@ -60,23 +60,23 @@ const defaultPageCallback = (
   page: Page,
   configData?: InstalledAppConfiguration,
 ): void => {
-  page
-    .name('Installation')
-    .section('Configuration', (section) => {
-      section
-        .textSetting(WEBHOOK_TOKEN_CONFIG_NAME)
-        .name(WEBHOOK_TOKEN_CONFIG_NAME)
-        .description(WEBHOOK_TOKEN_CONFIG_DESCRIPTION)
-        .defaultValue(getWebhookTokenDefault(configData))
-        .disabled(true);
-      section
-        .hideable(true)
-        .hidden(false)
-        .paragraphSetting('WebhookTokenInfo')
-        .name(WEBHOOK_TOKEN_CONFIG_INFO_HEADER)
-        .description(WEBHOOK_TOKEN_CONFIG_INFO_TEXT);
-    })
-    .complete(true);
+  page.name('Installation');
+  page.section('Config', (section) => {
+    section
+      .textSetting(WEBHOOK_TOKEN_CONFIG_NAME)
+      .name(WEBHOOK_TOKEN_CONFIG_NAME)
+      .description(WEBHOOK_TOKEN_CONFIG_DESCRIPTION)
+      .defaultValue(getWebhookTokenDefault(configData))
+      .disabled(true);
+  });
+  page.section('Info', (section) => {
+    section
+      .hideable(true)
+      .hidden(false)
+      .paragraphSetting('WebhookTokenInfo')
+      .name(WEBHOOK_TOKEN_CONFIG_INFO_HEADER)
+      .description(WEBHOOK_TOKEN_CONFIG_INFO_TEXT);
+  });
 };
 
 const getWebhookTokenDefault = (configData?: InstalledAppConfiguration): string =>
