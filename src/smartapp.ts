@@ -11,7 +11,7 @@ import { store } from './store';
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
 const WEBHOOK_TOKEN_CONFIG_NAME = 'WebhookToken';
 const WEBHOOK_TOKEN_CONFIG_DESCRIPTION =
-  'Copy this value in the Webhook Token field of the Homebridge SmartThings plugin configuration.';
+  'Copy this value in the Webhook Token field of the Homebridge SmartThings plugin configuration:';
 const WEBHOOK_TOKEN_CONFIG_INFO_TITLE = 'MORE INFO';
 const WEBHOOK_TOKEN_CONFIG_INFO_HEADER = 'How is the Webhook Token used?';
 const WEBHOOK_TOKEN_CONFIG_INFO_TEXT =
@@ -25,7 +25,7 @@ const DEFAULT_PAGE_TITLE = 'SmartApp Installation';
 const SMART_APP_PERMISSIONS = ['r:devices:*', 'r:locations:*'];
 const EVENT_LOGGING_ENABLED = logger.level === 'silly';
 
-const installedCallback = async (
+const appInstalledCallback = async (
   { api }: SmartAppContext,
   { installedApp }: AppEvent.InstallData,
 ): Promise<void> => {
@@ -38,7 +38,7 @@ const installedCallback = async (
   );
 };
 
-const uninstalledCallback = async (
+const appUninstalledCallback = async (
   { api }: SmartAppContext,
   { installedApp }: AppEvent.UninstallData,
 ): Promise<void> => {
@@ -100,6 +100,6 @@ export const smartApp = new SmartApp()
   .permissions(SMART_APP_PERMISSIONS)
   .defaultPage(defaultPageCallback)
   // .updated() @TODO if webhookToken changed clear+init cache
-  .installed(installedCallback)
-  .uninstalled(uninstalledCallback)
+  .installed(appInstalledCallback)
+  .uninstalled(appUninstalledCallback)
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback);
