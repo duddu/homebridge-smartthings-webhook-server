@@ -14,8 +14,19 @@ export const ensureSubscriptions = async (
   webhookToken: string,
   registeredDevicesIdsList: string[],
 ): Promise<void> => {
+  let subscriptionsContext: HSWSSubscriptionsContext;
+  try {
+    subscriptionsContext = store.getSubscriptionsContext(webhookToken);
+  } catch (e) {
+    logger.warn(
+      'ensureSubscriptions(): Unable to get app devices subscriptions; make sure you ' +
+        'COPY THE WEBHOOK TOKEN value from the SmartThings app installation screen to ' +
+        'the configuration of the Homebridge SmartThings plugin before calling the server.',
+      { error: e instanceof Error ? e.message : e },
+    );
+    return;
+  }
   const registeredDevicesIds = new Set(registeredDevicesIdsList);
-  const subscriptionsContext = store.getSubscriptionsContext(webhookToken);
   await Promise.all([
     subscribeToRegisteredDevices(registeredDevicesIds, subscriptionsContext),
     unsubscribeFromRemovedDevices(registeredDevicesIds, subscriptionsContext),
