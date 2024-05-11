@@ -55,6 +55,6 @@ jobs:
             /repos/${{ github.repository }}/dispatches \
             -f "event_type=docker-main" \
             -F "client_payload[docker_revision]=$([ -n "$RELEASE_TAG" ] && echo "$RELEASE_TAG" || echo '${{ github.sha }}')" \
-            -F "client_payload[docker_run_name]=$([ -n "$RELEASE_TAG" ] && echo "release: v$RELEASE_TAG" || echo "$HEAD_COMMIT_MESSAGE")" \
+            -F "client_payload[docker_run_name]=$([ -n "$RELEASE_TAG" ] && echo "release: $RELEASE_TAG" || echo "$HEAD_COMMIT_MESSAGE")" \
             -F "client_payload[docker_ref_name]=$([ -n "$RELEASE_TAG" ] && echo "$RELEASE_TAG" || echo "$REF_NAME")" \
             -F "client_payload[docker_ref_type]=$([ -n "$RELEASE_TAG" ] && echo 'tag' || echo 'branch')"
