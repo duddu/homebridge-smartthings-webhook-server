@@ -1,8 +1,7 @@
-import { InstalledAppConfiguration } from '@smartthings/core-sdk';
+import { ConfigValueType, InstalledAppConfiguration } from '@smartthings/core-sdk';
 import { Page, SmartApp, SmartAppContext } from '@smartthings/smartapp';
 import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
 import { Initialization } from '@smartthings/smartapp/lib/util/initialization';
-import { v4 as uuidv4 } from 'uuid';
 
 import { constants } from './constants';
 import { storeDeviceEvent } from './events';
@@ -16,95 +15,47 @@ const WEBHOOK_TOKEN_CONFIG_DESCRIPTION =
 const WEBHOOK_TOKEN_CONFIG_INFO_TITLE = 'MORE INFO';
 const WEBHOOK_TOKEN_CONFIG_INFO_HEADER = 'How is the Webhook Token used?';
 const WEBHOOK_TOKEN_CONFIG_INFO_TEXT =
-  'This unique id is auto-generated (no need to edit it) and coupled solely with this specific ' +
-  'installed smart app, until it gets uninstalled.\n' +
+  'This value is the unique identifier of this specific SmartApp instance. By using it as ' +
+  'Webhook Token as well we ensure they are coupled for the entire lifespan of this app.\n' +
   'This means you could have multiple child bridges of the SmartThings plugin configured on ' +
   'your Homebridge (or on multiple Homebridge instances), and as long as each bridge ' +
   'configuration links to a single installed smart app via this identifier, each one of them ' +
-  'can have a separate dedicated channel of communication with the same webhook server.';
+  'can have a separate dedicated channel of communication with the same webhook server.\n' +
+  'Note: there is no point in editing the token input, as it will be overriden again with the ' +
+  'smart app id automatically; the value is on this page just for you to select and copy.';
 const DEFAULT_PAGE_TITLE = 'SmartApp Installation';
 const SMART_APP_PERMISSIONS = ['r:devices:*', 'r:locations:*'];
 const EVENT_LOGGING_ENABLED = logger.level === 'silly';
 
 const appInitializedCallback = (
-  context: SmartAppContext,
-  _initialization: Initialization,
-  configData: AppEvent.ConfigurationData,
-): void => {
-  logger.debug('SmartApp initialized');
-  logger.debug('appInitializedCallback()', {
-    'context.api.installedApps.installedAppId': context.api.installedApps?.installedAppId,
-    'context.api.apps.installedAppId': context.api.apps?.installedAppId,
-    'context.api.config.installedAppId': context.api.config?.installedAppId,
-    'configData.installedAppId': configData?.installedAppId,
-    'configData.phase': configData?.phase,
-    configData,
-  });
-  if (configData && typeof configData?.installedAppId !== 'string') {
-    configData.installedAppId = 'gne';
-  }
-};
-
-const appInstalledCallback = async (
-  { api }: SmartAppContext,
-  installData: AppEvent.InstallData,
-): Promise<void> => {
-  logger.debug('SmartApp installed');
-  logger.debug('appInstalledCallback()', {
-    'context.api.installedApps.installedAppId': api.installedApps?.installedAppId,
-    'context.api.apps.installedAppId': api.apps?.installedAppId,
-    'context.api.config.installedAppId': api.config?.installedAppId,
-    'installedApp.installedAppId': installData.installedApp?.installedAppId,
-    'installedApp.config': installData.installedApp?.config,
-  });
-  await api.subscriptions.delete();
-  store.initCache(
-    getWebhookTokenFromConfig(installData.installedApp.config),
-    installData.installedApp.installedAppId,
-    api.subscriptions,
-  );
-};
-
-const appUninstalledCallback = async (
   _context: SmartAppContext,
-  { installedApp }: AppEvent.UninstallData,
-): Promise<void> => {
-  logger.debug('SmartApp uninstalled');
-  store.clearCache(getWebhookTokenFromConfig(installedApp.config));
-};
-
-// const appUpdatedCallback = async (
-//   _context: SmartAppContext,
-//   { previousConfig, installedApp }: AppEvent.UpdateData,
-// ): Promise<void> => {
-//   logger.debug('SmartApp updated');
-//   // if
-//   store.clearCache(getWebhookTokenFromConfig(installedApp.config));
-// };
-
-const deviceEventCallback = ({ config }: SmartAppContext, event: AppEvent.DeviceEvent): void => {
-  logger.debug('Device event received', event);
-  storeDeviceEvent(getWebhookTokenFromConfig(config), event);
+  _initialization: Initialization,
+  { installedAppId }: AppEvent.ConfigurationData,
+): void => {
+  logger.debug('appInitializedCallback(): SmartApp initialized', { installedAppId });
 };
 
 const defaultPageCallback = (
-  context: SmartAppContext,
+  _context: SmartAppContext,
   page: Page,
   configData?: InstalledAppConfiguration,
 ): void => {
-  logger.debug('defaultPageCallback()', {
-    'context.api.installedApps.installedAppId': context.api?.installedApps?.installedAppId,
-    'context.api.apps.installedAppId': context.api?.apps?.installedAppId,
-    'context.api.config.installedAppId': context.api?.config?.installedAppId,
-    'configData.installedAppId': configData?.installedAppId,
-    'configData.configurationStatus': configData?.configurationStatus,
-  });
+  const installedAppId = configData?.installedAppId;
+
+  if (typeof installedAppId !== 'string') {
+    const message = 'Unable to retrieve installedAppId while loading user configuration page';
+    logger.error(`defaultPageCallback(): ${message}`, { configData });
+    throw new Error(message);
+  }
+
+  logger.debug('defaultPageCallback(): Presenting user configuration page', { installedAppId });
+
   page.name(DEFAULT_PAGE_TITLE);
   page.section(WEBHOOK_TOKEN_CONFIG_DESCRIPTION, (section) => {
     section
       .textSetting(WEBHOOK_TOKEN_CONFIG_NAME)
       .name(WEBHOOK_TOKEN_CONFIG_NAME)
-      .defaultValue(getWebhookTokenDefault(configData))
+      .defaultValue(installedAppId)
       .required(true);
   });
   page.section(WEBHOOK_TOKEN_CONFIG_INFO_TITLE, (section) => {
@@ -117,20 +68,72 @@ const defaultPageCallback = (
   });
 };
 
-const getWebhookTokenDefault = (configData?: InstalledAppConfiguration): string =>
-  configData?.config[WEBHOOK_TOKEN_CONFIG_NAME]?.stringConfig?.value || uuidv4();
+const appInstalledCallback = async (
+  { api }: SmartAppContext,
+  { installedApp }: AppEvent.InstallData,
+): Promise<void> => {
+  const { installedAppId } = installedApp;
 
-const getWebhookTokenFromConfig = (config: AppEvent.ConfigMap): string => {
-  try {
-    const webhookToken = config[WEBHOOK_TOKEN_CONFIG_NAME][0]?.stringConfig?.value as string;
-    if (typeof webhookToken !== 'string' || webhookToken.trim() === '') {
-      throw new Error('WebhookToken value is not a valid string');
-    }
-    return webhookToken.trim();
-  } catch (error) {
-    logger.error('smartApp: Unable to retrieve webhookToken from app config', { config, error });
-    throw error;
+  logger.debug('appInstalledCallback(): SmartApp installed', { installedAppId });
+
+  await api.subscriptions.delete();
+
+  store.initCache(installedAppId, api.subscriptions);
+};
+
+const appUpdatedCallback = async (
+  _context: SmartAppContext,
+  { installedApp }: AppEvent.UpdateData,
+): Promise<void> => {
+  const { installedAppId } = installedApp;
+
+  logger.debug('appUpdatedCallback(): SmartApp updated', { installedAppId });
+
+  const configValue = installedApp.config[WEBHOOK_TOKEN_CONFIG_NAME]?.at(0)?.stringConfig?.value;
+
+  if (configValue !== installedAppId) {
+    logger.debug(
+      'appUpdatedCallback(): Configuration changed by the user. Resetting the value of ' +
+        `${WEBHOOK_TOKEN_CONFIG_NAME} from ${configValue} back to ${installedAppId}`,
+    );
+
+    installedApp.config[WEBHOOK_TOKEN_CONFIG_NAME] = [
+      {
+        valueType: ConfigValueType.STRING,
+        stringConfig: {
+          value: installedAppId,
+        },
+      },
+    ];
   }
+};
+
+const appUninstalledCallback = async (
+  _context: SmartAppContext,
+  { installedApp }: AppEvent.UninstallData,
+): Promise<void> => {
+  const { installedAppId } = installedApp;
+
+  logger.debug('appUninstalledCallback(): SmartApp uninstalled', {
+    installedAppId,
+  });
+
+  store.clearCache(installedAppId);
+};
+
+const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEvent): void => {
+  const { installedAppId } = api.config;
+
+  logger.debug('Device event received', { event, installedAppId });
+
+  if (typeof installedAppId !== 'string') {
+    logger.error(
+      'deviceEventCallback(): Unable to store the device event, installedAppId is not available',
+    );
+    return;
+  }
+
+  storeDeviceEvent(installedAppId, event);
 };
 
 export const smartApp = new SmartApp()
@@ -143,6 +146,6 @@ export const smartApp = new SmartApp()
   .defaultPage(defaultPageCallback)
   .initialized(appInitializedCallback)
   .installed(appInstalledCallback)
-  // .updated() @TODO if webhookToken changed clear old +init new
+  .updated(appUpdatedCallback)
   .uninstalled(appUninstalledCallback)
   .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback);

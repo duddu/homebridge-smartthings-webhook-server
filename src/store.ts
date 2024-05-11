@@ -1,5 +1,4 @@
 import { SubscriptionsEndpoint } from '@smartthings/core-sdk';
-import { ConstructorArgs } from 'homebridge';
 import { ShortEvent } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
 import NodeCache from 'node-cache';
 
@@ -11,12 +10,12 @@ const SUBSCRIPTION_CACHE_TTL = 0;
 export class HSWSEventsQueue extends Set<ShortEvent> {}
 
 export class HSWSSubscriptionsContext {
+  public readonly subscribedDevicesIds = new Set<string>();
+
   constructor(
     public readonly installedAppId: string,
     public readonly subscriptionsEndpoint: SubscriptionsEndpoint,
   ) {}
-
-  public readonly subscribedDevicesIds = new Set<string>();
 }
 
 interface HSWSICache<V> {
@@ -47,10 +46,7 @@ class HSWSStore {
     this.subscriptionsContexts = new HSWSSubscriptionsContextsCache(SUBSCRIPTION_CACHE_TTL);
   }
 
-  public initCache = (
-    cacheKey: string,
-    ...subscriptionsContext: ConstructorArgs<typeof HSWSSubscriptionsContext>
-  ): void => {
+  public initCache = (cacheKey: string, subscriptionsEndpoint: SubscriptionsEndpoint): void => {
     try {
       if (!this.eventsQueues.set(cacheKey, new HSWSEventsQueue())) {
         throw HSWSEventsQueuesCache.name;
@@ -58,14 +54,14 @@ class HSWSStore {
       if (
         !this.subscriptionsContexts.set(
           cacheKey,
-          new HSWSSubscriptionsContext(...subscriptionsContext),
+          new HSWSSubscriptionsContext(cacheKey, subscriptionsEndpoint),
         )
       ) {
         throw HSWSSubscriptionsContextsCache.name;
       }
     } catch (failedCacheName) {
       const message = `Failed to initialize ${failedCacheName} for key ${cacheKey}`;
-      logger.error(`HSWSStore::initCache(): ${message}`, { ...subscriptionsContext });
+      logger.error(`HSWSStore::initCache(): ${message}`, { subscriptionsEndpoint });
       throw new Error(message);
     }
     logger.debug(`HSWSStore::initCache(): Initialized store caches for key ${cacheKey}`);
@@ -73,16 +69,21 @@ class HSWSStore {
 
   public clearCache = (cacheKey: string): void => {
     try {
+      const failedCacheNames: string[] = [];
       if (this.eventsQueues.del(cacheKey) !== 1) {
-        throw HSWSEventsQueuesCache.name;
+        failedCacheNames.push(HSWSEventsQueuesCache.name);
       }
       if (this.subscriptionsContexts.del(cacheKey) !== 1) {
-        throw HSWSSubscriptionsContextsCache.name;
+        failedCacheNames.push(HSWSSubscriptionsContextsCache.name);
       }
-    } catch (failedCacheName) {
-      const message = `Unable to delete ${failedCacheName} for key ${cacheKey}`;
-      logger.error(`HSWSStore::clearCache(): ${message}`);
-      throw new Error(message);
+      if (failedCacheNames.length > 0) {
+        throw failedCacheNames;
+      }
+    } catch (failedCacheNames) {
+      for (const cacheName of failedCacheNames as string[]) {
+        logger.warn(`HSWSStore::clearCache(): Unable to delete ${cacheName} for key ${cacheKey}`);
+      }
+      return;
     }
     logger.debug(`HSWSStore::clearCache(): Deleted store caches for key ${cacheKey}`);
   };
