@@ -13,12 +13,15 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DOCKER_IMAGE: ghcr.io/${{ github.repository }}
-  DOCKER_PLATFORMS: ${{ github.event_name != 'pull_request' && 'linux/amd64,linux/arm64/v8' || '' }}
+  IMAGE: ghcr.io/${{ github.repository }}
+  IMAGE_ARGS: |
+    GIT_REF=${{ github.event.client_payload.docker_ref_name || github.ref_name }}
+    GIT_SHA=${{ github.event.client_payload.docker_revision || github.sha }}
+  IMAGE_CACHE_SRC: type=registry,ref=ghcr.io/${{ github.repository }}:latest-cache{0}
 
 jobs:
   docker:
-    name: Build${{ github.event_name != 'pull_request' && ' and publish' || '' }} image
+    name: Build${{ github.event_name == 'repository_dispatch' && ' and publish' || '' }} image
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,54 +42,65 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          buildkitd-config: 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name == 'repository_dispatch' }}
         id: qemu
-        with:
-          platforms: ${{ env.DOCKER_PLATFORMS }}
       - name: Extract image metadata
         uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.DOCKER_IMAGE }}
+          images: ${{ env.IMAGE }}
       - name: Reset npm package version for build cache
         run: npm version 0.0.0-dockerbuild --no-git-tag-version
-      - name: Build${{ github.event_name != 'pull_request' && ' and push' || '' }} image
+      - name: Build${{ github.event_name == 'repository_dispatch' && ' and push' || '' }} image
         uses: docker/build-push-action@v5
         id: push
-        env:
-          CACHE_SRC: 'type=registry,ref=${{ env.DOCKER_IMAGE }}:latest-cache{0}'
         with:
           context: .
-          target: production
           load: ${{ github.event_name == 'pull_request' }}
-          push: ${{ github.event_name != 'pull_request' }}
-          sbom: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name == 'repository_dispatch' }}
+          sbom: ${{ github.event_name == 'repository_dispatch' }}
           tags: |
             ${{ steps.meta.outputs.tags }}
-            ${{ env.DOCKER_IMAGE }}:${{ github.event.client_payload.docker_ref_name || github.ref_name }}
-            ${{ env.DOCKER_IMAGE }}:${{ github.event_name != 'pull_request' && 'latest' || github.ref_name }}
-          build-args: |
-            GIT_REF=${{ github.event.client_payload.docker_ref_name || github.ref_name }}
-            GIT_SHA=${{ github.event.client_payload.docker_revision || github.sha }}
+            ${{ env.IMAGE }}:${{ github.event.client_payload.docker_ref_name || github.ref_name }}
+            ${{ env.IMAGE }}:${{ github.event_name == 'repository_dispatch' && 'latest' || github.ref_name }}
+          build-args: ${{ env.IMAGE_ARGS }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          cache-from: ${{ format(env.CACHE_SRC, '') }}
-          cache-to: ${{ github.event_name != 'pull_request' && format(env.CACHE_SRC, ',mode=max') || '' }}
+          platforms: ${{ github.event_name == 'repository_dispatch' && 'linux/arm64/v8,linux/amd64' || '' }}
+          cache-from: |
+            ${{ format(env.IMAGE_CACHE_SRC, '-arm64') }}
+            ${{ format(env.IMAGE_CACHE_SRC, '-amd64') }}
+      - name: Push arm64 image build cache
+        uses: docker/build-push-action@v5
+        if: ${{ github.event_name == 'repository_dispatch' }}
+        with:
+          context: .
+          load: true
+          build-args: ${{ env.IMAGE_ARGS }}
+          platforms: linux/arm64/v8
+          cache-from: ${{ format(env.IMAGE_CACHE_SRC, '-arm64') }}
+          cache-to: ${{ format(env.IMAGE_CACHE_SRC, '-arm64,mode=max') }}
+      - name: Push amd64 image build cache
+        uses: docker/build-push-action@v5
+        if: ${{ github.event_name == 'repository_dispatch' }}
+        with:
+          context: .
+          load: true
+          build-args: ${{ env.IMAGE_ARGS }}
+          platforms: linux/amd64
+          cache-from: ${{ format(env.IMAGE_CACHE_SRC, '-amd64') }}
+          cache-to: ${{ format(env.IMAGE_CACHE_SRC, '-amd64,mode=max') }}
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name == 'repository_dispatch' }}
         with:
-          subject-name: ${{ env.DOCKER_IMAGE }}
+          subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
       - name: Run deploy on Render workflow
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name == 'repository_dispatch' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
