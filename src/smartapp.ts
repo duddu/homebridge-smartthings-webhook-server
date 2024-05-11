@@ -46,7 +46,7 @@ const appInstalledCallback = async (
   { installedApp }: AppEvent.InstallData,
 ): Promise<void> => {
   logger.debug('SmartApp installed');
-  logger.debug('appInitializedCallback()', {
+  logger.debug('appInstalledCallback()', {
     'context.api.installedApps.installedAppId': api.installedApps.installedAppId,
     'context.api.apps.installedAppId': api.apps.installedAppId,
     'context.api.config.installedAppId': api.config.installedAppId,
