@@ -27,24 +27,24 @@ const DEFAULT_PAGE_TITLE = 'SmartApp Installation';
 const SMART_APP_PERMISSIONS = ['r:devices:*', 'r:locations:*'];
 const EVENT_LOGGING_ENABLED = logger.level === 'silly';
 
-const appInitializedCallback = async (
-  { api }: SmartAppContext,
+const appInitializedCallback = (
+  _context: SmartAppContext,
   _initialization: Initialization,
   { installedAppId, config }: AppEvent.ConfigurationData,
-): Promise<void> => {
+): void => {
   logger.debug('appInitializedCallback(): SmartApp initialized', { installedAppId });
 
   config[WEBHOOK_TOKEN_CONFIG_NAME] = [
     { valueType: ConfigValueType.STRING, stringConfig: { value: installedAppId } },
   ];
 
-  await api.installedApps.updateConfiguration(installedAppId, {
-    config: {
-      [WEBHOOK_TOKEN_CONFIG_NAME]: [
-        { valueType: ConfigValueType.STRING, stringConfig: { value: installedAppId } },
-      ],
-    },
-  });
+  // await api.installedApps.updateConfiguration(installedAppId, {
+  //   config: {
+  //     [WEBHOOK_TOKEN_CONFIG_NAME]: [
+  //       { valueType: ConfigValueType.STRING, stringConfig: { value: installedAppId } },
+  //     ],
+  //   },
+  // });
 };
 
 const defaultPageCallback = (
@@ -58,6 +58,13 @@ const defaultPageCallback = (
     const message = 'Unable to retrieve installedAppId while loading user configuration page';
     logger.error(`defaultPageCallback(): ${message}`, { configData });
     throw new Error(message);
+  }
+
+  if (configData) {
+    configData.config[WEBHOOK_TOKEN_CONFIG_NAME] = {
+      valueType: ConfigValueType.STRING,
+      stringConfig: { value: installedAppId },
+    };
   }
 
   logger.debug('defaultPageCallback(): Presenting user configuration page', { installedAppId });
