@@ -13,7 +13,11 @@ const { combine, errors, json, label, metadata, timestamp } = format;
 const getLoggerFormat = (category: LoggerCategories): Logform.Format =>
   combine(
     errors({ stack: true }),
-    timestamp(),
+    timestamp({
+      format() {
+        return new Date().toLocaleString();
+      },
+    }),
     label({ label: category }),
     metadata({ fillExcept: ['label', 'level', 'message', 'timestamp'] }),
     json(),
