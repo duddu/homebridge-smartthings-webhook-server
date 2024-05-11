@@ -12,7 +12,7 @@ COPY package.json npm-shrinkwrap.json ./
 
 USER node
 
-RUN npm clean-install --ignore-scripts
+RUN npm run ci:audit
 
 COPY --chown=node:node . .
 

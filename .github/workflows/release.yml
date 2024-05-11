@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm install -g npm @vercel/ncc
-          npm clean-install --ignore-scripts
+          npm run ci:audit
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_GIT_TOKEN }}
