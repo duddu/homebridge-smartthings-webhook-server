@@ -64,15 +64,27 @@ class HSWSStore {
         throw HSWSSubscriptionsContextsCache.name;
       }
     } catch (failedCacheName) {
-      const message = `Unable to set initialize ${failedCacheName} for key ${cacheKey}`;
-      logger.error(`HSWSStore::initCacheKey(): ${message}`, { ...subscriptionsContext });
+      const message = `Failed to initialize ${failedCacheName} for key ${cacheKey}`;
+      logger.error(`HSWSStore::initCache(): ${message}`, { ...subscriptionsContext });
       throw new Error(message);
     }
+    logger.debug(`HSWSStore::initCache(): Initialized store caches for key ${cacheKey}`);
   };
 
   public clearCache = (cacheKey: string): void => {
-    this.eventsQueues.del(cacheKey);
-    this.subscriptionsContexts.del(cacheKey);
+    try {
+      if (this.eventsQueues.del(cacheKey) !== 1) {
+        throw HSWSEventsQueuesCache.name;
+      }
+      if (this.subscriptionsContexts.del(cacheKey) !== 1) {
+        throw HSWSSubscriptionsContextsCache.name;
+      }
+    } catch (failedCacheName) {
+      const message = `Unable to delete ${failedCacheName} for key ${cacheKey}`;
+      logger.error(`HSWSStore::clearCache(): ${message}`);
+      throw new Error(message);
+    }
+    logger.debug(`HSWSStore::clearCache(): Deleted store caches for key ${cacheKey}`);
   };
 
   public addEvent = (cacheKey: string, event: ShortEvent): void => {
