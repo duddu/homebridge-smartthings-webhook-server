@@ -82,8 +82,8 @@ const appInstalledCallback = async (
 };
 
 const appUpdatedCallback = async (
-  { api }: SmartAppContext,
-  { previousConfig, installedApp }: AppEvent.UpdateData,
+  _context: SmartAppContext,
+  { previousConfig, installedApp, authToken, refreshToken }: AppEvent.UpdateData,
 ): Promise<void> => {
   const { installedAppId } = installedApp;
 
@@ -98,7 +98,15 @@ const appUpdatedCallback = async (
       { previousConfig, updatedConfig: installedApp.config },
     );
 
-    await api.installedApps.updateConfiguration(installedAppId, { config: previousConfig });
+    const appContext = await smartApp.withContext({
+      installedAppId,
+      authToken,
+      refreshToken,
+    });
+
+    await appContext.api.installedApps.updateConfiguration(installedAppId, {
+      config: previousConfig,
+    });
   }
 };
 
