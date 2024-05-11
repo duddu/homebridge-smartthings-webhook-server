@@ -28,10 +28,8 @@ export const ensureSubscriptions = async (
     return;
   }
 
-  const registeredDevicesIds = new Set(registeredDevicesIdsList);
-
   for (const task of [subscribeToRegisteredDevices, unsubscribeFromRemovedDevices]) {
-    await task(registeredDevicesIds, subscriptionsContext);
+    await task(new Set(registeredDevicesIdsList), subscriptionsContext);
   }
 };
 
