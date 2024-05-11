@@ -33,30 +33,34 @@ const appInitializedCallback = (
 ): void => {
   logger.debug('SmartApp initialized');
   logger.debug('appInitializedCallback()', {
-    'context.api.installedApps.installedAppId': context.api.installedApps.installedAppId,
-    'context.api.apps.installedAppId': context.api.apps.installedAppId,
-    'context.api.config.installedAppId': context.api.config.installedAppId,
-    'configData.installedAppId': configData.installedAppId,
-    'configData.phase': configData.phase,
+    'context.api.installedApps.installedAppId': context.api.installedApps?.installedAppId,
+    'context.api.apps.installedAppId': context.api.apps?.installedAppId,
+    'context.api.config.installedAppId': context.api.config?.installedAppId,
+    'configData.installedAppId': configData?.installedAppId,
+    'configData.phase': configData?.phase,
+    configData,
   });
+  if (configData && typeof configData?.installedAppId !== 'string') {
+    configData.installedAppId = 'gne';
+  }
 };
 
 const appInstalledCallback = async (
   { api }: SmartAppContext,
-  { installedApp }: AppEvent.InstallData,
+  installData: AppEvent.InstallData,
 ): Promise<void> => {
   logger.debug('SmartApp installed');
   logger.debug('appInstalledCallback()', {
-    'context.api.installedApps.installedAppId': api.installedApps.installedAppId,
-    'context.api.apps.installedAppId': api.apps.installedAppId,
-    'context.api.config.installedAppId': api.config.installedAppId,
-    'installedApp.installedAppId': installedApp.installedAppId,
-    'installedApp.config': installedApp.config,
+    'context.api.installedApps.installedAppId': api.installedApps?.installedAppId,
+    'context.api.apps.installedAppId': api.apps?.installedAppId,
+    'context.api.config.installedAppId': api.config?.installedAppId,
+    'installedApp.installedAppId': installData.installedApp?.installedAppId,
+    'installedApp.config': installData.installedApp?.config,
   });
   await api.subscriptions.delete();
   store.initCache(
-    getWebhookTokenFromConfig(installedApp.config),
-    installedApp.installedAppId,
+    getWebhookTokenFromConfig(installData.installedApp.config),
+    installData.installedApp.installedAppId,
     api.subscriptions,
   );
 };
@@ -89,9 +93,9 @@ const defaultPageCallback = (
   configData?: InstalledAppConfiguration,
 ): void => {
   logger.debug('defaultPageCallback()', {
-    'context.api.installedApps.installedAppId': context.api.installedApps.installedAppId,
-    'context.api.apps.installedAppId': context.api.apps.installedAppId,
-    'context.api.config.installedAppId': context.api.config.installedAppId,
+    'context.api.installedApps.installedAppId': context.api?.installedApps?.installedAppId,
+    'context.api.apps.installedAppId': context.api?.apps?.installedAppId,
+    'context.api.config.installedAppId': context.api?.config?.installedAppId,
     'configData.installedAppId': configData?.installedAppId,
     'configData.configurationStatus': configData?.configurationStatus,
   });
