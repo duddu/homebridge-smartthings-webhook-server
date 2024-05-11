@@ -8,13 +8,12 @@ export const flushDevicesEvents = (webhookToken: string): ShortEvent[] => {
   try {
     events = store.getEvents(webhookToken);
   } catch (e) {
-    logger.warn(
+    logger.error(
       'flushDevicesEvents(): Unable to get devices events; make sure you ' +
         'COPY THE WEBHOOK TOKEN value from the SmartThings app installation screen to ' +
         'the configuration of the Homebridge SmartThings plugin before calling the server.',
-      { error: e instanceof Error ? e.message : e },
     );
-    return [];
+    throw e;
   }
   const eventsList = Array.from(events);
   events.clear();

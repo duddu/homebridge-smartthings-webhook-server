@@ -19,13 +19,12 @@ export const ensureSubscriptions = async (
   try {
     subscriptionsContext = store.getSubscriptionsContext(webhookToken);
   } catch (e) {
-    logger.warn(
+    logger.error(
       'ensureSubscriptions(): Unable to get app devices subscriptions; make sure you ' +
         'COPY THE WEBHOOK TOKEN value from the SmartThings app installation screen to ' +
         'the configuration of the Homebridge SmartThings plugin before calling the server.',
-      { error: e instanceof Error ? e.toString() : e },
     );
-    return;
+    throw e;
   }
 
   for (const task of [subscribeToRegisteredDevices, unsubscribeFromRemovedDevices]) {
