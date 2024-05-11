@@ -85,7 +85,7 @@ const appInstalledCallback = async (
 
   await api.schedules.schedule(
     ENSURE_CACHE_SCHEDULE_HANDLER_NAME,
-    `*/${ENSURE_CACHE_SCHEDULE_INTERVAL_MIN} * * *`,
+    `0/${ENSURE_CACHE_SCHEDULE_INTERVAL_MIN} * * * ?`,
     process.env.TZ,
   );
 };
