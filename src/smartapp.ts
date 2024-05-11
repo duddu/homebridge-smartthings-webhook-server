@@ -39,11 +39,10 @@ const appInstalledCallback = async (
 };
 
 const appUninstalledCallback = async (
-  { api }: SmartAppContext,
+  _context: SmartAppContext,
   { installedApp }: AppEvent.UninstallData,
 ): Promise<void> => {
   logger.debug('SmartApp uninstalled');
-  await api.subscriptions.delete();
   store.clearCache(getWebhookTokenFromConfig(installedApp.config));
 };
 
