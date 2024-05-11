@@ -82,7 +82,7 @@ const appInstalledCallback = async (
 };
 
 const appUpdatedCallback = async (
-  _context: SmartAppContext,
+  { api }: SmartAppContext,
   { installedApp }: AppEvent.UpdateData,
 ): Promise<void> => {
   const { installedAppId } = installedApp;
@@ -97,14 +97,18 @@ const appUpdatedCallback = async (
         `${WEBHOOK_TOKEN_CONFIG_NAME} from ${configValue} back to ${installedAppId}`,
     );
 
-    installedApp.config[WEBHOOK_TOKEN_CONFIG_NAME] = [
-      {
-        valueType: ConfigValueType.STRING,
-        stringConfig: {
-          value: installedAppId,
-        },
+    await api.installedApps.updateConfiguration(installedAppId, {
+      config: {
+        [WEBHOOK_TOKEN_CONFIG_NAME]: [
+          {
+            valueType: ConfigValueType.STRING,
+            stringConfig: {
+              value: installedAppId,
+            },
+          },
+        ],
       },
-    ];
+    });
   }
 };
 
