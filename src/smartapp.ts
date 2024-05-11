@@ -106,7 +106,7 @@ const appUninstalledCallback = async (
 const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEvent): void => {
   const { installedAppId } = api.config;
 
-  logger.debug('Device event received', { event, installedAppId });
+  logger.debug('deviceEventCallback(): Device event received', { event, installedAppId });
 
   if (typeof installedAppId !== 'string') {
     logger.error(
@@ -121,7 +121,9 @@ const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEve
 const ensureCacheScheduleCallback = ({ api }: SmartAppContext) => {
   const { installedAppId } = api.config;
 
-  logger.debug('Ensure cache scheduled event received', { installedAppId });
+  logger.debug('ensureCacheScheduleCallback(): Ensure cache scheduled event received', {
+    installedAppId,
+  });
 
   if (typeof installedAppId !== 'string') {
     logger.error(

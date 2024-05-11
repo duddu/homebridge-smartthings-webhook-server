@@ -33,15 +33,11 @@ class HSWSCache<V> extends NodeCache implements HSWSICache<V> {
     });
   }
 
-  public chillSet = (key: string, value: V, overrideIfPresent: boolean): boolean => {
-    if (!overrideIfPresent) {
-      if (this.has(key)) {
-        return true;
-      }
-      logger.debug(
-        `HSWSCache::chillSet(): Cache for key ${key} is actually missing, setting it now`,
-      );
+  public chillSet = (key: string, value: V): boolean | undefined => {
+    if (this.has(key)) {
+      return undefined;
     }
+    logger.debug(`HSWSCache::chillSet(): Cache for key ${key} is missing, setting it now`);
     return this.set(key, value);
   };
 }
@@ -60,29 +56,14 @@ class HSWSStore {
   }
 
   public initCache = (cacheKey: string, subscriptionsEndpoint: SubscriptionsEndpoint): void => {
-    this.initOrEnsureCache(cacheKey, subscriptionsEndpoint, true);
-    logger.debug(`HSWSStore::initCache(): Initialized store caches for key ${cacheKey}`);
-  };
-
-  public ensureCache = (cacheKey: string, subscriptionsEndpoint: SubscriptionsEndpoint): void => {
-    this.initOrEnsureCache(cacheKey, subscriptionsEndpoint, false);
-    logger.debug(`HSWSStore::ensureCache(): Ensured store caches for key ${cacheKey}`);
-  };
-
-  private initOrEnsureCache = (
-    cacheKey: string,
-    subscriptionsEndpoint: SubscriptionsEndpoint,
-    overrideIfPresent: boolean,
-  ) => {
     try {
-      if (!this.eventsQueues.chillSet(cacheKey, new HSWSEventsQueue(), overrideIfPresent)) {
+      if (!this.eventsQueues.set(cacheKey, new HSWSEventsQueue())) {
         throw HSWSEventsQueuesCache.name;
       }
       if (
-        !this.subscriptionsContexts.chillSet(
+        !this.subscriptionsContexts.set(
           cacheKey,
           new HSWSSubscriptionsContext(cacheKey, subscriptionsEndpoint),
-          overrideIfPresent,
         )
       ) {
         throw HSWSSubscriptionsContextsCache.name;
@@ -92,6 +73,33 @@ class HSWSStore {
       logger.error(`HSWSStore::initOrEnsureCache(): ${message}`, { subscriptionsEndpoint });
       throw new HSWSError(message);
     }
+    logger.debug(`HSWSStore::initCache(): Initialized store caches for key ${cacheKey}`);
+  };
+
+  public ensureCache = async (
+    cacheKey: string,
+    subscriptionsEndpoint: SubscriptionsEndpoint,
+  ): Promise<void> => {
+    try {
+      if (this.eventsQueues.chillSet(cacheKey, new HSWSEventsQueue()) === false) {
+        throw HSWSEventsQueuesCache.name;
+      }
+      const subContextSet = this.subscriptionsContexts.chillSet(
+        cacheKey,
+        new HSWSSubscriptionsContext(cacheKey, subscriptionsEndpoint),
+      );
+      if (subContextSet === false) {
+        throw HSWSSubscriptionsContextsCache.name;
+      }
+      if (subContextSet === true) {
+        await subscriptionsEndpoint.delete();
+      }
+    } catch (failedCacheName) {
+      const message = `Failed to initialize ${failedCacheName} for key ${cacheKey}`;
+      logger.error(`HSWSStore::initOrEnsureCache(): ${message}`, { subscriptionsEndpoint });
+      throw new HSWSError(message);
+    }
+    logger.debug(`HSWSStore::ensureCache(): Ensured store caches for key ${cacheKey}`);
   };
 
   public clearCache = (cacheKey: string): void => {
