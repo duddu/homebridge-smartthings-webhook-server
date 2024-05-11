@@ -66,7 +66,7 @@ jobs:
           sbom: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ steps.meta.outputs.tags }}
-            ${{ env.DOCKER_IMAGE }}:${{ github.event.client_payload.docker_ref_type == 'tag' && 'main' || github.event_name == 'pull_request' && github.ref_name || 'latest' }}
+            ${{ env.DOCKER_IMAGE }}:${{ github.event.client_payload.docker_ref_name || github.ref_name }}
           build-args: |
             GIT_REF=${{ github.event.client_payload.docker_ref_name || github.ref_name }}
             GIT_SHA=${{ github.event.client_payload.docker_revision || github.sha }}
