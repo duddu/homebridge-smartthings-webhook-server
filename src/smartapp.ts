@@ -27,12 +27,24 @@ const DEFAULT_PAGE_TITLE = 'SmartApp Installation';
 const SMART_APP_PERMISSIONS = ['r:devices:*', 'r:locations:*'];
 const EVENT_LOGGING_ENABLED = logger.level === 'silly';
 
-const appInitializedCallback = (
-  _context: SmartAppContext,
+const appInitializedCallback = async (
+  { api }: SmartAppContext,
   _initialization: Initialization,
-  { installedAppId }: AppEvent.ConfigurationData,
-): void => {
+  { installedAppId, config }: AppEvent.ConfigurationData,
+): Promise<void> => {
   logger.debug('appInitializedCallback(): SmartApp initialized', { installedAppId });
+
+  config[WEBHOOK_TOKEN_CONFIG_NAME] = [
+    { valueType: ConfigValueType.STRING, stringConfig: { value: installedAppId } },
+  ];
+
+  await api.installedApps.updateConfiguration(installedAppId, {
+    config: {
+      [WEBHOOK_TOKEN_CONFIG_NAME]: [
+        { valueType: ConfigValueType.STRING, stringConfig: { value: installedAppId } },
+      ],
+    },
+  });
 };
 
 const defaultPageCallback = (
@@ -79,14 +91,6 @@ const appInstalledCallback = async (
   await api.subscriptions.delete();
 
   store.initCache(installedAppId, api.subscriptions);
-
-  await api.installedApps.updateConfiguration(installedAppId, {
-    config: {
-      [WEBHOOK_TOKEN_CONFIG_NAME]: [
-        { valueType: ConfigValueType.STRING, stringConfig: { value: installedAppId } },
-      ],
-    },
-  });
 };
 
 // const appUpdatedCallback = async (
