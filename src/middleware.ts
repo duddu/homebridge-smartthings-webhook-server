@@ -61,9 +61,9 @@ export const webhookTokenMiddleware: HSWSClientRequestHandler = (req, res, next)
 
 export const rateLimitMiddleware = slowDown({
   windowMs: 2000,
-  delayAfter: 1,
-  delayMs: (hits) => hits * 200,
-  maxDelayMs: 800,
+  delayAfter: 2,
+  delayMs: (hits) => hits * 150,
+  maxDelayMs: 500,
   skipFailedRequests: true,
   validate: { xForwardedForHeader: false },
   keyGenerator: (_req, res) => (res.locals as HSWSExpressLocals).webhookToken,
