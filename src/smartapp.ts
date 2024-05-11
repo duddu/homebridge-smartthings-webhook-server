@@ -11,7 +11,7 @@ import { store } from './store';
 
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
 const ENSURE_CACHE_SCHEDULE_HANDLER_NAME = 'HSWSScheduledEventHandler';
-const ENSURE_CACHE_SCHEDULE_INTERVAL_MIN = 10;
+const ENSURE_CACHE_SCHEDULE_INTERVAL_MIN = 2;
 const WEBHOOK_TOKEN_CONFIG_NAME = 'Webhook Token';
 const WEBHOOK_TOKEN_CONFIG_DESCRIPTION =
   'Copy this value in the Webhook Token field of your Homebridge SmartThings plugin configuration:';
@@ -72,9 +72,10 @@ const defaultPageCallback = (
 };
 
 const appInstalledCallback = async (
-  { api }: SmartAppContext,
+  context: SmartAppContext,
   { installedApp }: AppEvent.InstallData,
 ): Promise<void> => {
+  const { api } = context;
   const { installedAppId } = installedApp;
 
   logger.debug('appInstalledCallback(): SmartApp installed', { installedAppId });
@@ -82,6 +83,8 @@ const appInstalledCallback = async (
   await Promise.all([api.subscriptions.delete(), api.schedules.delete()]);
 
   store.initCache(installedAppId, api.subscriptions);
+
+  await context.setItem('subscriptionsEndpoint', api.subscriptions);
 
   await api.schedules.schedule(
     ENSURE_CACHE_SCHEDULE_HANDLER_NAME,
@@ -118,7 +121,8 @@ const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEve
   storeDeviceEvent(installedAppId, event);
 };
 
-const ensureCacheScheduleCallback = ({ api }: SmartAppContext) => {
+const ensureCacheScheduleCallback = async (context: SmartAppContext) => {
+  const { api } = context;
   const { installedAppId } = api.config;
 
   logger.debug('ensureCacheScheduleCallback(): Ensure cache scheduled event received', {
@@ -133,6 +137,8 @@ const ensureCacheScheduleCallback = ({ api }: SmartAppContext) => {
   }
 
   store.ensureCache(installedAppId, api.subscriptions);
+
+  logger.debug('context.getItem()', { subs: await context.getItem('subscriptionsEndpoint') });
 };
 
 export const smartApp = new SmartApp()
