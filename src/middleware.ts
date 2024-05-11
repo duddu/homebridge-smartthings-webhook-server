@@ -11,6 +11,7 @@ import { flushDevicesEvents } from './events';
 import { logger } from './logger';
 import { smartApp } from './smartapp';
 import { ensureSubscriptions } from './subscriptions';
+import { store } from './store';
 
 interface HSWSExpressLocals extends Record<string, unknown> {
   webhookToken: string;
@@ -34,6 +35,10 @@ export const versionMiddleware: RequestHandler = (_req, res) => {
     revision: constants.HSWS_REVISION,
     smartAppId: constants.STSA_SMART_APP_ID,
   });
+};
+
+export const cacheStatsMiddleware: RequestHandler = (_req, res) => {
+  res.status(200).json(store.getStats());
 };
 
 export const smartAppWebhookMiddleware: RequestHandler = (req, res) => {

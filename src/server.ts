@@ -3,6 +3,7 @@ import express from 'express';
 import { constants } from './constants';
 import { logger } from './logger';
 import {
+  cacheStatsMiddleware,
   clientRequestMiddleware,
   healthMiddleware,
   rateLimitMiddleware,
@@ -13,6 +14,7 @@ import {
 
 const PATH_HEALTH = '/healthz';
 const PATH_VERSION = '/version';
+const PATH_CACHE_STATS = '/cache-stats';
 const PATH_API = '/api';
 const PATH_CLIENTREQUEST = `${PATH_API}/clientrequest`;
 
@@ -27,6 +29,7 @@ const listenCallback = (): void => {
 export const server = express()
   .get(PATH_HEALTH, healthMiddleware)
   .get(PATH_VERSION, versionMiddleware)
+  .get(PATH_CACHE_STATS, cacheStatsMiddleware)
   .use(express.json())
   .post(PATH_API, smartAppWebhookMiddleware)
   .post(PATH_CLIENTREQUEST, webhookTokenMiddleware, rateLimitMiddleware, clientRequestMiddleware)

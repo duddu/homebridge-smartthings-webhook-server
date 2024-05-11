@@ -139,6 +139,11 @@ class HSWSStore {
     }
     return value;
   };
+
+  public getStats = (): { [C: string]: NodeCache.Stats } => ({
+    [HSWSEventsQueuesCache.name]: this.eventsQueues.getStats(),
+    [HSWSSubscriptionsContextsCache.name]: this.subscriptionsContexts.getStats(),
+  });
 }
 
 export const store = new HSWSStore();
