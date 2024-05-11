@@ -33,8 +33,13 @@ class HSWSCache<V> extends NodeCache implements HSWSICache<V> {
   }
 
   public chillSet = (key: string, value: V, overrideIfPresent: boolean): boolean => {
-    if (!overrideIfPresent && this.has(key)) {
-      return true;
+    if (!overrideIfPresent) {
+      if (this.has(key)) {
+        return true;
+      }
+      logger.debug(
+        `HSWSCache::chillSet(): Cache for key ${key} is actually missing, setting it now`,
+      );
     }
     return this.set(key, value);
   };
@@ -53,11 +58,21 @@ class HSWSStore {
     this.subscriptionsContexts = new HSWSSubscriptionsContextsCache(SUBSCRIPTION_CACHE_TTL);
   }
 
-  public initCache = (
+  public initCache = (cacheKey: string, subscriptionsEndpoint: SubscriptionsEndpoint): void => {
+    this.initOrEnsureCache(cacheKey, subscriptionsEndpoint, true);
+    logger.debug(`HSWSStore::initCache(): Initialized store caches for key ${cacheKey}`);
+  };
+
+  public ensureCache = (cacheKey: string, subscriptionsEndpoint: SubscriptionsEndpoint): void => {
+    this.initOrEnsureCache(cacheKey, subscriptionsEndpoint, false);
+    logger.debug(`HSWSStore::ensureCache(): Ensured store caches for key ${cacheKey}`);
+  };
+
+  private initOrEnsureCache = (
     cacheKey: string,
     subscriptionsEndpoint: SubscriptionsEndpoint,
-    overrideIfPresent = true,
-  ): void => {
+    overrideIfPresent: boolean,
+  ) => {
     try {
       if (!this.eventsQueues.chillSet(cacheKey, new HSWSEventsQueue(), overrideIfPresent)) {
         throw HSWSEventsQueuesCache.name;
@@ -73,10 +88,9 @@ class HSWSStore {
       }
     } catch (failedCacheName) {
       const message = `Failed to initialize ${failedCacheName} for key ${cacheKey}`;
-      logger.error(`HSWSStore::initCache(): ${message}`, { subscriptionsEndpoint });
+      logger.error(`HSWSStore::initOrEnsureCache(): ${message}`, { subscriptionsEndpoint });
       throw new Error(message);
     }
-    logger.debug(`HSWSStore::initCache(): Initialized store caches for key ${cacheKey}`);
   };
 
   public clearCache = (cacheKey: string): void => {

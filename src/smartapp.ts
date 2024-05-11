@@ -129,7 +129,7 @@ const ensureCacheScheduleCallback = ({ api }: SmartAppContext) => {
     return;
   }
 
-  store.initCache(installedAppId, api.subscriptions, false);
+  store.ensureCache(installedAppId, api.subscriptions);
 };
 
 export const smartApp = new SmartApp()
