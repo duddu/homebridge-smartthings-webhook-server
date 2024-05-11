@@ -1,4 +1,4 @@
-name: Semantic Release
+name: Evaluate Release
 
 on:
   push:
@@ -40,3 +40,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_GIT_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm run release
+      - name: Run deploy on Render workflow
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RELEASE_TAG="git describe --tags HEAD --candidates 0"
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/dispatches \
+            -f "event_type=docker-main" \
+            -F "client_payload[docker_revision]=$(eval "$RELEASE_TAG" || echo '${{ github.sha }}')" \
+            -F "client_payload[docker_run_name]=$(eval "$RELEASE_TAG" || echo '${{ github.event.head_commit.message }}')" \
+            -F "client_payload[docker_ref_name]=$(eval "$RELEASE_TAG" || echo '${{ github.ref_name }}')" \
+            -F "client_payload[docker_ref_type]=$(eval "$RELEASE_TAG" && echo 'tag' || echo 'branch')"
