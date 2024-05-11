@@ -1,3 +1,5 @@
+import { HSWSError } from './error';
+
 const {
   HSWS_PORT,
   HSWS_VERSION,
@@ -19,7 +21,7 @@ class HSWSConstants {
 
   private validate(envVar: string | undefined): string {
     if (typeof envVar !== 'string' || envVar.trim().length === 0) {
-      throw new Error('Required environment variable is not set or empty');
+      throw new HSWSError('Required environment variable is not set or empty');
     }
     return envVar;
   }

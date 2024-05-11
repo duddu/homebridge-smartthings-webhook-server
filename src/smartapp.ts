@@ -4,6 +4,7 @@ import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
 import { Initialization } from '@smartthings/smartapp/lib/util/initialization';
 
 import { constants } from './constants';
+import { HSWSError } from './error';
 import { storeDeviceEvent } from './events';
 import { logger, smartAppLogger } from './logger';
 import { store } from './store';
@@ -47,7 +48,7 @@ const defaultPageCallback = (
   if (typeof installedAppId !== 'string') {
     const message = 'Unable to retrieve installedAppId while loading user configuration page';
     logger.error(`defaultPageCallback(): ${message}`, { configData });
-    throw new Error(message);
+    throw new HSWSError(message);
   }
 
   logger.debug('defaultPageCallback(): Presenting user configuration page', { installedAppId });

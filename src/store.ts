@@ -2,6 +2,7 @@ import { SubscriptionsEndpoint } from '@smartthings/core-sdk';
 import { ShortEvent } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
 import NodeCache from 'node-cache';
 
+import { HSWSError } from './error';
 import { logger } from './logger';
 
 const EVENTS_CACHE_TTL = 86400;
@@ -89,7 +90,7 @@ class HSWSStore {
     } catch (failedCacheName) {
       const message = `Failed to initialize ${failedCacheName} for key ${cacheKey}`;
       logger.error(`HSWSStore::initOrEnsureCache(): ${message}`, { subscriptionsEndpoint });
-      throw new Error(message);
+      throw new HSWSError(message);
     }
   };
 
@@ -134,7 +135,7 @@ class HSWSStore {
   ): V => {
     const value = cache.get<V>(key);
     if (!(value instanceof constructor)) {
-      throw new Error(`${constructor.name} not initialized for cache key ${key}`);
+      throw new HSWSError(`${constructor.name} not initialized for cache key ${key}`);
     }
     return value;
   };
