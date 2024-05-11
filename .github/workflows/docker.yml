@@ -67,6 +67,7 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.tags }}
             ${{ env.DOCKER_IMAGE }}:${{ github.event.client_payload.docker_ref_name || github.ref_name }}
+            ${{ env.DOCKER_IMAGE }}:${{ github.event_name != 'pull_request' && 'latest' || github.ref_name }}
           build-args: |
             GIT_REF=${{ github.event.client_payload.docker_ref_name || github.ref_name }}
             GIT_SHA=${{ github.event.client_payload.docker_revision || github.sha }}
