@@ -29,12 +29,13 @@ const listenCallback = (): void => {
 
 export const server = express()
   .get(PATH_HEALTH, healthMiddleware)
+  .use(compression({ level: 6, threshold: 10 }))
   .get(PATH_VERSION, versionMiddleware)
   .get(PATH_CACHE_STATS, cacheStatsMiddleware)
-  .use(compression({ level: 6, threshold: 0 }))
   .use(express.json())
   .post(PATH_API, smartAppWebhookMiddleware)
   .post(PATH_CLIENTREQUEST, webhookTokenMiddleware, rateLimitMiddleware, clientRequestMiddleware)
+  .disable('x-powered-by')
   .listen(constants.HSWS_PORT, listenCallback);
 
 server.keepAliveTimeout = 120000;
