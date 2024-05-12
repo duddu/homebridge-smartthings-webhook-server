@@ -146,8 +146,7 @@ jobs:
           sbom: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ steps.meta.outputs.tags }}
-            ${{ env.IMAGE }}:${{ github.ref_name }}
-            ${{ env.IMAGE }}:${{ github.event_name != 'pull_request' && 'latest' || github.ref_name }}
+            ${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
           build-args: ${{ env.IMAGE_ARGS }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
