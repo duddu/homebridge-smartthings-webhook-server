@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 
 import { constants } from './constants';
 import { logger } from './logger';
@@ -30,6 +31,7 @@ export const server = express()
   .get(PATH_HEALTH, healthMiddleware)
   .get(PATH_VERSION, versionMiddleware)
   .get(PATH_CACHE_STATS, cacheStatsMiddleware)
+  .use(compression({ level: 6, threshold: 0 }))
   .use(express.json())
   .post(PATH_API, smartAppWebhookMiddleware)
   .post(PATH_CLIENTREQUEST, webhookTokenMiddleware, rateLimitMiddleware, clientRequestMiddleware)
