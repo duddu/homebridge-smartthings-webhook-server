@@ -19,7 +19,6 @@
       "devDependencies": {
         "@jest/globals": "^29.7.0",
         "@semantic-release/commit-analyzer": "^12.0.0",
-        "@semantic-release/git": "^10.0.1",
         "@semantic-release/github": "^10.0.3",
         "@semantic-release/npm": "^12.0.1",
         "@semantic-release/release-notes-generator": "^13.0.0",
@@ -2425,37 +2424,6 @@
         "semantic-release": ">=20.1.0"
       }
     },
-    "node_modules/@semantic-release/error": {
-      "version": "3.0.0",
-      "resolved": "https://registry.npmjs.org/@semantic-release/error/-/error-3.0.0.tgz",
-      "integrity": "sha512-5hiM4Un+tpl4cKw3lV4UgzJj+SmfNIDCLLw0TepzQxz9ZGV5ixnqkzIVF+3tp0ZHgcMKE+VNGHJjEeyFG2dcSw==",
-      "dev": true,
-      "engines": {
-        "node": ">=14.17"
-      }
-    },
-    "node_modules/@semantic-release/git": {
-      "version": "10.0.1",
-      "resolved": "https://registry.npmjs.org/@semantic-release/git/-/git-10.0.1.tgz",
-      "integrity": "sha512-eWrx5KguUcU2wUPaO6sfvZI0wPafUKAMNC18aXY4EnNcrZL86dEmpNVnC9uMpGZkmZJ9EfCVJBQx4pV4EMGT1w==",
-      "dev": true,
-      "dependencies": {
-        "@semantic-release/error": "^3.0.0",
-        "aggregate-error": "^3.0.0",
-        "debug": "^4.0.0",
-        "dir-glob": "^3.0.0",
-        "execa": "^5.0.0",
-        "lodash": "^4.17.4",
-        "micromatch": "^4.0.0",
-        "p-reduce": "^2.0.0"
-      },
-      "engines": {
-        "node": ">=14.17"
-      },
-      "peerDependencies": {
-        "semantic-release": ">=18.0.0"
-      }
-    },
     "node_modules/@semantic-release/github": {
       "version": "10.0.3",
       "resolved": "https://registry.npmjs.org/@semantic-release/github/-/github-10.0.3.tgz",
@@ -3563,19 +3531,6 @@
         "node": ">= 14"
       }
     },
-    "node_modules/aggregate-error": {
-      "version": "3.1.0",
-      "resolved": "https://registry.npmjs.org/aggregate-error/-/aggregate-error-3.1.0.tgz",
-      "integrity": "sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==",
-      "dev": true,
-      "dependencies": {
-        "clean-stack": "^2.0.0",
-        "indent-string": "^4.0.0"
-      },
-      "engines": {
-        "node": ">=8"
-      }
-    },
     "node_modules/ajv": {
       "version": "6.12.6",
       "resolved": "https://registry.npmjs.org/ajv/-/ajv-6.12.6.tgz",
@@ -4489,15 +4444,6 @@
         "@types/validator": "^13.11.8",
         "libphonenumber-js": "^1.10.53",
         "validator": "^13.9.0"
-      }
-    },
-    "node_modules/clean-stack": {
-      "version": "2.2.0",
-      "resolved": "https://registry.npmjs.org/clean-stack/-/clean-stack-2.2.0.tgz",
-      "integrity": "sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==",
-      "dev": true,
-      "engines": {
-        "node": ">=6"
       }
     },
     "node_modules/cli-cursor": {
@@ -6339,6 +6285,7 @@
       "resolved": "https://registry.npmjs.org/execa/-/execa-5.1.1.tgz",
       "integrity": "sha512-8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==",
       "dev": true,
+      "peer": true,
       "dependencies": {
         "cross-spawn": "^7.0.3",
         "get-stream": "^6.0.0",
@@ -8036,6 +7983,7 @@
       "resolved": "https://registry.npmjs.org/human-signals/-/human-signals-2.1.0.tgz",
       "integrity": "sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==",
       "dev": true,
+      "peer": true,
       "engines": {
         "node": ">=10.17.0"
       }
@@ -10755,6 +10703,7 @@
       "resolved": "https://registry.npmjs.org/npm-run-path/-/npm-run-path-4.0.1.tgz",
       "integrity": "sha512-S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw==",
       "dev": true,
+      "peer": true,
       "dependencies": {
         "path-key": "^3.0.0"
       },
@@ -13504,15 +13453,6 @@
         "url": "https://github.com/sponsors/sindresorhus"
       }
     },
-    "node_modules/p-reduce": {
-      "version": "2.1.0",
-      "resolved": "https://registry.npmjs.org/p-reduce/-/p-reduce-2.1.0.tgz",
-      "integrity": "sha512-2USApvnsutq8uoxZBGbbWM0JIYLiEMJ9RlaN7fAzVNb9OZN0SHjjTTfIcb667XynS5Y1VhwDJVDa72TnPzAYWw==",
-      "dev": true,
-      "engines": {
-        "node": ">=8"
-      }
-    },
     "node_modules/p-try": {
       "version": "2.2.0",
       "resolved": "https://registry.npmjs.org/p-try/-/p-try-2.2.0.tgz",
@@ -15931,6 +15871,7 @@
       "resolved": "https://registry.npmjs.org/strip-final-newline/-/strip-final-newline-2.0.0.tgz",
       "integrity": "sha512-BrpvfNAE3dcvq7ll3xVumzjKjZQ5tI1sEUIKr3Uoks0XUl45St3FlatVqef9prk4jRDzhW6WZg+3bk93y6pLjA==",
       "dev": true,
+      "peer": true,
       "engines": {
         "node": ">=6"
       }

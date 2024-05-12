@@ -26,8 +26,7 @@
     "prebuild:ncc": "npm run prebuild",
     "build": "tsc --rootDir $npm_package_config_src_dir --outDir $npm_package_config_build_dir",
     "build:ncc": "npx @vercel/ncc build $npm_package_config_src_entry -msC --target es2022 -o $npm_package_config_build_dir",
-    "build:publish": "npm run lint && npm run test && npm run build:ncc",
-    "prepublishOnly": "npm run build:publish",
+    "prepublishOnly": "npm run build:ncc",
     "ci:audit": "npm clean-install && npm audit signatures",
     "release": "semantic-release",
     "start": "node $npm_package_config_build_dir"
@@ -43,7 +42,6 @@
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@semantic-release/commit-analyzer": "^12.0.0",
-    "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^10.0.3",
     "@semantic-release/npm": "^12.0.1",
     "@semantic-release/release-notes-generator": "^13.0.0",

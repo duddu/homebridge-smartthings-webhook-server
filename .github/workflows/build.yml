@@ -1,0 +1,215 @@
+name: Build and publish
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: build-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  test_and_compile:
+    name: Test and compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          check-latest: true
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm run test
+      - name: Build
+        run: npm run build
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config: |
+            paths-ignore:
+              - docs
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  release:
+    name: Evaluate Semantic Release
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    needs: test_and_compile
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          check-latest: true
+          cache: npm
+      - name: Install dependencies
+        run: |
+          npm install -g npm @vercel/ncc
+          npm run ci:audit
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_GIT_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm run release
+
+  docker:
+    name: Build${{ github.event_name != 'pull_request' && ' and push' || '' }} Docker image
+    runs-on: ubuntu-latest
+    needs:
+      - test_and_compile
+      - release
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || true }}
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      IMAGE_ARGS: |
+        GIT_REF=${{ github.ref_name }}
+        GIT_SHA=${{ github.sha }}
+      IMAGE_CACHE_SRC: type=registry,ref=ghcr.io/${{ github.repository }}:latest-cache{0}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          fetch-tags: true
+      - name: Log in to the container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        if: ${{ github.event_name != 'pull_request' }}
+        id: qemu
+      - name: Extract image metadata
+        uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+      - name: Reset npm package version for build cache
+        run: npm version 0.0.0-dockerbuild --no-git-tag-version
+      - name: Build${{ github.event_name != 'pull_request' && ' and push' || '' }} image
+        uses: docker/build-push-action@v5
+        id: push
+        with:
+          context: .
+          load: ${{ github.event_name == 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          sbom: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ env.IMAGE }}:${{ github.ref_name }}
+            ${{ env.IMAGE }}:${{ github.event_name != 'pull_request' && 'latest' || github.ref_name }}
+          build-args: ${{ env.IMAGE_ARGS }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          platforms: ${{ github.event_name != 'pull_request' && 'linux/arm64/v8,linux/amd64' || '' }}
+          cache-from: |
+            ${{ format(env.IMAGE_CACHE_SRC, '-arm64') }}
+            ${{ format(env.IMAGE_CACHE_SRC, '-amd64') }}
+      - name: Push arm64 image build cache
+        uses: docker/build-push-action@v5
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          context: .
+          load: true
+          build-args: ${{ env.IMAGE_ARGS }}
+          platforms: linux/arm64/v8
+          cache-from: ${{ format(env.IMAGE_CACHE_SRC, '-arm64') }}
+          cache-to: ${{ format(env.IMAGE_CACHE_SRC, '-arm64,mode=max') }}
+      - name: Push amd64 image build cache
+        uses: docker/build-push-action@v5
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          context: .
+          load: true
+          build-args: ${{ env.IMAGE_ARGS }}
+          platforms: linux/amd64
+          cache-from: ${{ format(env.IMAGE_CACHE_SRC, '-amd64') }}
+          cache-to: ${{ format(env.IMAGE_CACHE_SRC, '-amd64,mode=max') }}
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  deploy:
+    name: Deploy on Northflank
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    needs: docker
+    env:
+      VERSION_URL: https://${{ vars.NORTHFLANK_CUSTOM_DOMAIN }}/version
+    environment:
+      name: duddu.dev
+      url: ${{ env.VERSION_URL }}
+    steps:
+      - name: Invoke Northflank pipeline webhook
+        timeout-minutes: 1
+        run: curl -fs ${{ secrets.NORTHFLANK_WEBHOOK_URL }} >/dev/null
+      - name: Verify deployed version
+        timeout-minutes: 5
+        run: |
+          while curl -fs ${{ env.VERSION_URL }} | grep "${{ github.sha }}" &>/dev/null; [[ $? -ne 0 ]];
+          do
+            echo "Waiting for deployment..."
+            sleep 10
+          done
+          echo
+          echo "Version healthcheck succeded! Deployed revision: ${{ github.sha }}"
