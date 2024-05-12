@@ -25,6 +25,5 @@ jobs:
         uses: actions-js/push@v1.5
         with:
           branch: main
-          rebase: true
           message: 'chore(npm): update version to ${{ github.ref_name }} [skip ci]'
           github_token: ${{ secrets.SEMANTIC_RELEASE_GIT_TOKEN }}
