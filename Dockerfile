@@ -16,7 +16,7 @@ RUN npm run ci:audit
 
 COPY --chown=node:node . .
 
-RUN npm run build:publish
+RUN npm run build:ncc
 
 FROM node:lts-alpine as production
 
