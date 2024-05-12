@@ -95,8 +95,8 @@ class HSWSStore {
         await subscriptionsEndpoint.delete();
       }
     } catch (failedCacheName) {
-      const message = `Failed to initialize ${failedCacheName} for key ${cacheKey}`;
-      logger.error(`HSWSStore::initOrEnsureCache(): ${message}`, { subscriptionsEndpoint });
+      const message = `Failed to ensure ${failedCacheName} for key ${cacheKey}`;
+      logger.warn(`HSWSStore::ensureCache(): ${message}`, { subscriptionsEndpoint });
       throw new HSWSError(message);
     }
     logger.debug(`HSWSStore::ensureCache(): Ensured store caches for key ${cacheKey}`);
