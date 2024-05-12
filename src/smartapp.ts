@@ -11,7 +11,7 @@ import { store } from './store';
 
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
 const ENSURE_CACHE_SCHEDULE_HANDLER_NAME = 'HSWSScheduledEventHandler';
-const ENSURE_CACHE_SCHEDULE_INTERVAL_MIN = 10;
+const ENSURE_CACHE_SCHEDULE_INTERVAL_MIN = 5;
 const WEBHOOK_TOKEN_CONFIG_NAME = 'Webhook Token';
 const WEBHOOK_TOKEN_CONFIG_DESCRIPTION =
   'Copy this value in the Webhook Token field of your Homebridge SmartThings plugin configuration:';
