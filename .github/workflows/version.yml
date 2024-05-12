@@ -1,0 +1,29 @@
+name: Update npm version
+
+on:
+  push:
+    tags: [ '[0-9]+.[0-9]+.[0-9]+' ]
+
+concurrency:
+  group: update-version
+
+jobs:
+  version:
+    name: Commit updated version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set npm package version to git tag
+        run: |
+          npm version ${{ github.ref_name }} --no-git-tag-version
+          git add package.json npm-shrinkwrap.json
+      - name: Commit and push changes
+        uses: actions-js/push@v1.5
+        with:
+          branch: main
+          message: 'chore(npm): update version to ${{ github.ref_name }} [skip ci]'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
