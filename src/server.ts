@@ -1,5 +1,5 @@
-import express from 'express';
 import compression from 'compression';
+import express from 'express';
 
 import { constants } from './constants';
 import { logger } from './logger';
@@ -29,7 +29,6 @@ const listenCallback = (): void => {
 
 export const server = express()
   .get(PATH_HEALTH, healthMiddleware)
-  .use(compression({ level: 6, threshold: 10 }))
   .get(PATH_VERSION, versionMiddleware)
   .get(PATH_CACHE_STATS, cacheStatsMiddleware)
   .use(express.json())
