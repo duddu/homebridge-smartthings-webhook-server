@@ -12,10 +12,10 @@ const { combine, errors, json, label, metadata, timestamp } = format;
 
 const getLoggerFormat = (category: LoggerCategories): Logform.Format =>
   combine(
-    errors({ stack: true }),
+    errors({ stack: constants.HSWS_LOG_LEVEL === 'silly' }),
     timestamp(),
     label({ label: category }),
-    metadata({ fillExcept: ['label', 'level', 'message', 'timestamp'] }),
+    metadata({ key: 'data', fillExcept: ['label', 'level', 'message', 'timestamp'] }),
     json(),
   );
 
