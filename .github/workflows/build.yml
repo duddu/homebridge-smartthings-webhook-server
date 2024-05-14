@@ -211,11 +211,7 @@ jobs:
       - name: Invoke Northflank pipeline webhook
         timeout-minutes: 1
         run: |
-          curl -fs ${{ secrets.NORTHFLANK_WEBHOOK_URL }}?\
-            name=Deploy%20image%20tag%20${{ env.NF_RELEASE_IMAGE_TAG }}&\
-            description=Release%20flow%20for%20git%20reference%20${{ github.sha }}&\
-            image_tag=${{ env.NF_RELEASE_IMAGE_TAG }}&\
-            image_digest=${{ env.NF_RELEASE_IMAGE_DIGEST }}
+          curl -fs "${{ secrets.NORTHFLANK_WEBHOOK_URL }}?name=Deploy%20image%20${$(echo ${{ env.NF_RELEASE_IMAGE_DIGEST }})//:/-}&description=Release%20flow%20for%20${{ env.NF_RELEASE_IMAGE_TAG }}%20(${{ github.sha }})&image_digest=${{ env.NF_RELEASE_IMAGE_DIGEST }}"
       - name: Verify deployed version
         timeout-minutes: 3
         run: |
