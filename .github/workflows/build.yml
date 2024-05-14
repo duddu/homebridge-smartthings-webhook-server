@@ -143,6 +143,8 @@ jobs:
       - name: Build${{ github.event_name != 'pull_request' && ' and push' || '' }} image
         uses: docker/build-push-action@v5
         id: push
+        env:
+          PR_IMAGE_TAG: 'pr-${{ github.event.number }}'
         with:
           context: .
           load: ${{ github.event_name == 'pull_request' }}
@@ -150,8 +152,8 @@ jobs:
           sbom: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ steps.meta.outputs.tags }}
-            ${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && github.head_ref || env.IMAGE_GIT_REF_TAG }}
-            ${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && github.head_ref || 'latest' }}
+            ${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && env.PR_IMAGE_TAG || env.IMAGE_GIT_REF_TAG }}
+            ${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && env.PR_IMAGE_TAG || 'latest' }}
           build-args: ${{ env.IMAGE_ARGS }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
