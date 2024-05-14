@@ -7,9 +7,10 @@ import {
   SubscriptionsEndpoint,
 } from '@smartthings/core-sdk';
 
+import { HSWSError } from './error';
 import { logger } from './logger';
 import { DEVICE_EVENT_HANDLER_NAME, smartApp } from './smartapp';
-import { getAuthenticationTokens } from './store';
+import { getAuthenticationTokens, getSubscribedDevicesIds, setSubscribedDevicesIds } from './store';
 
 type HSWSSubscriptionsContext = {
   installedAppId: string;
@@ -29,10 +30,10 @@ export const ensureSubscriptions = async (
     refreshToken,
   });
 
-  const subscriptionsContext = {
+  const subscriptionsContext: HSWSSubscriptionsContext = {
     installedAppId: webhookToken,
-    subscribedDevicesIds: new Set<string>(),
     subscriptionsEndpoint: smartAppContext.api.subscriptions,
+    subscribedDevicesIds: await getSubscribedDevicesIds(webhookToken),
   };
 
   for (const task of [subscribeToRegisteredDevices, unsubscribeFromRemovedDevices]) {
@@ -68,15 +69,16 @@ const subscribeToRegisteredDevices = async (
       '*',
       DEVICE_EVENT_HANDLER_NAME,
     );
+    for (const id of unsubscribedDevicesIds) {
+      subscribedDevicesIds.add(id);
+    }
+    await setSubscribedDevicesIds(installedAppId, subscribedDevicesIds);
   } catch (e) {
-    logger.error(
+    throw new HSWSError(
       'subscribeToRegisteredDevices(): Unable to subscribe installed app ' +
         `${installedAppId} to registered devices events`,
+      e,
     );
-    throw e;
-  }
-  for (const id of unsubscribedDevicesIds) {
-    subscribedDevicesIds.add(id);
   }
   logger.debug('subscribeToRegisteredDevices(): Subscribed to new registered devices events', {
     installedAppId,
@@ -123,12 +125,13 @@ const unsubscribeFromRemovedDevices = async (
           subscribedDevicesIds.delete(device.deviceId);
         }),
     );
+    await setSubscribedDevicesIds(installedAppId, subscribedDevicesIds);
   } catch (e) {
-    logger.error(
+    throw new HSWSError(
       'unsubscribeFromRemovedDevices(): Unable to unsubscribe installed app ' +
         `${installedAppId} from unregistered devices events`,
+      e,
     );
-    throw e;
   }
   logger.debug('unsubscribeFromRemovedDevices(): Unsubscribed from unregistered devices events', {
     installedAppId,

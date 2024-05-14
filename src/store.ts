@@ -157,12 +157,10 @@ export const setSubscribedDevicesIds = async (
   subscribedDevicesIds: Set<string>,
 ): Promise<void> => {
   try {
+    const subIdsKey = `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`;
     await Promise.all([
-      redisClient.del(`${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`),
-      redisClient.sAdd(
-        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
-        Array.from(subscribedDevicesIds),
-      ),
+      redisClient.del(subIdsKey),
+      redisClient.sAdd(subIdsKey, Array.from(subscribedDevicesIds)),
     ]);
   } catch (e) {
     throw redisClientError(setSubscribedDevicesIds.name, e);
