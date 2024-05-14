@@ -4,29 +4,36 @@ import {
   DeviceSubscriptionDetail,
   Subscription,
   SubscriptionSource,
+  SubscriptionsEndpoint,
 } from '@smartthings/core-sdk';
 
 import { logger } from './logger';
-import { DEVICE_EVENT_HANDLER_NAME } from './smartapp';
-import { HSWSSubscriptionsContext, store } from './store';
+import { DEVICE_EVENT_HANDLER_NAME, smartApp } from './smartapp';
+import { getAuthenticationTokens } from './store';
+
+type HSWSSubscriptionsContext = {
+  installedAppId: string;
+  subscribedDevicesIds: Set<string>;
+  subscriptionsEndpoint: SubscriptionsEndpoint;
+};
 
 export const ensureSubscriptions = async (
   webhookToken: string,
   registeredDevicesIdsList: string[],
 ): Promise<void> => {
-  let subscriptionsContext: HSWSSubscriptionsContext;
+  const { authToken, refreshToken } = await getAuthenticationTokens(webhookToken);
 
-  try {
-    subscriptionsContext = store.getSubscriptionsContext(webhookToken);
-  } catch (e) {
-    logger.warn(
-      'ensureSubscriptions(): Unable to get app devices subscriptions. Unless you recently ' +
-        'restarted the webhook server, it is possible that the webhook token stored in the ' +
-        'plugin does not match any installed smart app id.',
-      { error: e instanceof Error ? e.message : e },
-    );
-    return;
-  }
+  const smartAppContext = await smartApp.withContext({
+    installedAppId: webhookToken,
+    authToken,
+    refreshToken,
+  });
+
+  const subscriptionsContext = {
+    installedAppId: webhookToken,
+    subscribedDevicesIds: new Set<string>(),
+    subscriptionsEndpoint: smartAppContext.api.subscriptions,
+  };
 
   for (const task of [subscribeToRegisteredDevices, unsubscribeFromRemovedDevices]) {
     await task(new Set(registeredDevicesIdsList), subscriptionsContext);

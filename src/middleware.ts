@@ -7,11 +7,10 @@ import {
 import { stringify } from 'safe-stable-stringify';
 
 import { constants } from './constants';
-import { flushDevicesEvents } from './events';
+import { flushDeviceEvents, isValidCacheKey } from './store';
 import { logger } from './logger';
 import { smartApp } from './smartapp';
 import { ensureSubscriptions } from './subscriptions';
-import { store } from './store';
 
 interface HSWSExpressLocals extends Record<string, unknown> {
   webhookToken: string;
@@ -37,20 +36,22 @@ export const versionMiddleware: RequestHandler = (_req, res) => {
   });
 };
 
-export const cacheStatsMiddleware: RequestHandler = (_req, res) => {
-  res.status(200).json(store.getStats());
-};
-
 export const smartAppWebhookMiddleware: RequestHandler = (req, res) => {
   smartApp.handleHttpCallback(req, res);
 };
 
-export const webhookTokenMiddleware: HSWSClientRequestHandler = (req, res, next) => {
+export const webhookTokenMiddleware: HSWSClientRequestHandler = async (req, res, next) => {
   const bearer = req.get('Authorization')?.replace('Bearer:', '').trim();
 
   if (typeof bearer !== 'string' || bearer === '') {
-    logger.error('Unable to retrieve bearer token from request headers');
+    logger.error('webhookTokenMiddleware(): Unable to retrieve webhook token from request headers');
     res.sendStatus(401);
+    return;
+  }
+
+  if (!(await isValidCacheKey(bearer))) {
+    logger.error('webhookTokenMiddleware(): The webhook token present in the request is not valid');
+    res.sendStatus(403);
     return;
   }
 
@@ -108,7 +109,7 @@ export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res
 
     await ensureSubscriptions(webhookToken, deviceIds);
 
-    const events = flushDevicesEvents(webhookToken);
+    const events = await flushDeviceEvents(webhookToken);
 
     res.status(200).json({ timeout: false, events });
   } catch (e) {

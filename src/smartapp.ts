@@ -7,11 +7,9 @@ import { constants } from './constants';
 import { HSWSError } from './error';
 import { storeDeviceEvent } from './events';
 import { logger, smartAppLogger } from './logger';
-import { store } from './store';
+import { initCache, clearCache } from './store';
 
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
-const ENSURE_CACHE_SCHEDULE_HANDLER_NAME = 'HSWSScheduledEventHandler';
-const ENSURE_CACHE_SCHEDULE_INTERVAL_MIN = 5;
 const WEBHOOK_TOKEN_CONFIG_NAME = 'Webhook Token';
 const WEBHOOK_TOKEN_CONFIG_DESCRIPTION =
   'Copy this value in the Webhook Token field of your Homebridge SmartThings plugin configuration:';
@@ -73,21 +71,15 @@ const defaultPageCallback = (
 
 const appInstalledCallback = async (
   { api }: SmartAppContext,
-  { installedApp }: AppEvent.InstallData,
+  { installedApp, authToken, refreshToken }: AppEvent.InstallData,
 ): Promise<void> => {
   const { installedAppId } = installedApp;
 
   logger.debug('appInstalledCallback(): SmartApp installed', { installedAppId });
 
-  await Promise.all([api.subscriptions.delete(), api.schedules.delete()]);
+  await api.subscriptions.delete();
 
-  store.initCache(installedAppId, api.subscriptions);
-
-  await api.schedules.schedule(
-    ENSURE_CACHE_SCHEDULE_HANDLER_NAME,
-    `0/${ENSURE_CACHE_SCHEDULE_INTERVAL_MIN} * * * ?`,
-    process.env.TZ,
-  );
+  await initCache(installedAppId, authToken, refreshToken);
 };
 
 const appUninstalledCallback = async (
@@ -100,7 +92,7 @@ const appUninstalledCallback = async (
     installedAppId,
   });
 
-  store.clearCache(installedAppId);
+  await clearCache(installedAppId);
 };
 
 const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEvent): void => {
@@ -118,23 +110,6 @@ const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEve
   storeDeviceEvent(installedAppId, event);
 };
 
-const ensureCacheScheduleCallback = ({ api }: SmartAppContext) => {
-  const { installedAppId } = api.config;
-
-  logger.debug('ensureCacheScheduleCallback(): Ensure cache scheduled event received', {
-    installedAppId,
-  });
-
-  if (typeof installedAppId !== 'string') {
-    logger.error(
-      'ensureCacheScheduleCallback(): Unable to ensure cache, installedAppId is not available',
-    );
-    return;
-  }
-
-  store.ensureCache(installedAppId, api.subscriptions);
-};
-
 export const smartApp = new SmartApp()
   .configureLogger(smartAppLogger)
   .enableEventLogging(2, EVENT_LOGGING_ENABLED)
@@ -146,5 +121,4 @@ export const smartApp = new SmartApp()
   .initialized(appInitializedCallback)
   .installed(appInstalledCallback)
   .uninstalled(appUninstalledCallback)
-  .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback)
-  .scheduledEventHandler(ENSURE_CACHE_SCHEDULE_HANDLER_NAME, ensureCacheScheduleCallback);
+  .subscribedDeviceEventHandler(DEVICE_EVENT_HANDLER_NAME, deviceEventCallback);
