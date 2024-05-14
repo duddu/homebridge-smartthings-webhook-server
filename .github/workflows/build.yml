@@ -142,7 +142,8 @@ jobs:
         if: github.event_name != 'pull_request'
         id: define_image_git_ref_tag
         run: |
-          echo "IMAGE_GIT_REF_TAG=$(git describe --tags HEAD --candidates 0 || echo '${{ github.ref_name }}')" >> "$GITHUB_ENV"
+          export IMAGE_GIT_REF_TAG="$(git describe --tags HEAD --candidates 0 || echo '${{ github.ref_name }}')"
+          echo "IMAGE_GIT_REF_TAG=$IMAGE_GIT_REF_TAG" >> "$GITHUB_ENV"
           echo "IMAGE_ARGS=GIT_REF=$IMAGE_GIT_REF_TAG\\nGIT_SHA=${{ github.sha }}" >> "$GITHUB_ENV"
           echo "image_git_ref_tag=$IMAGE_GIT_REF_TAG" >> "$GITHUB_OUTPUT"
       - name: Build${{ github.event_name != 'pull_request' && ' and push' || '' }} image
@@ -202,7 +203,7 @@ jobs:
     env:
       VERSION_URL: https://${{ vars.NORTHFLANK_CUSTOM_DOMAIN }}/version
       NF_RELEASE_IMAGE_TAG: ${{ needs.docker.outputs.image_digest }}
-      NF_RELEASE_FLOW_RUN_NAME: 'Release ${{ needs.docker.outputs.image_git_ref_tag }}'
+      NF_RELEASE_FLOW_RUN_NAME: 'Deploy image tag ${{ needs.docker.outputs.image_git_ref_tag }}'
       NF_RELEASE_FLOW_RUN_DESC: 'Release flow for git reference ${{ github.sha }}'
     environment:
       name: duddu.dev
