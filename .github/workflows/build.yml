@@ -203,15 +203,15 @@ jobs:
     env:
       VERSION_URL: https://${{ vars.NORTHFLANK_CUSTOM_DOMAIN }}/version
       NF_RELEASE_IMAGE_TAG: ${{ needs.docker.outputs.image_digest }}
-      NF_RELEASE_FLOW_RUN_NAME: 'Deploy image tag ${{ needs.docker.outputs.image_git_ref_tag }}'
-      NF_RELEASE_FLOW_RUN_DESC: 'Release flow for git reference ${{ github.sha }}'
+      NF_RELEASE_FLOW_RUN_NAME: 'Deploy%20image%20tag%20${{ needs.docker.outputs.image_git_ref_tag }}'
+      NF_RELEASE_FLOW_RUN_DESC: 'Release%20flow%20for%20git%20reference%20${{ github.sha }}'
     environment:
       name: duddu.dev
       url: ${{ env.VERSION_URL }}
     steps:
       - name: Invoke Northflank pipeline webhook
         timeout-minutes: 1
-        run: curl -fs ${{ secrets.NORTHFLANK_WEBHOOK_URL }}?name=${{ env.NF_RELEASE_FLOW_RUN_NAME }}&description=${{ env.NF_RELEASE_FLOW_RUN_DESC }}&image_tag=${{ env.NF_RELEASE_IMAGE_TAG }} >/dev/null
+        run: curl -fs ${{ secrets.NORTHFLANK_WEBHOOK_URL }}?name=${{ env.NF_RELEASE_FLOW_RUN_NAME }}&description=${{ env.NF_RELEASE_FLOW_RUN_DESC }}&image_tag=${{ env.NF_RELEASE_IMAGE_TAG }}
       - name: Verify deployed version
         timeout-minutes: 5
         run: |
