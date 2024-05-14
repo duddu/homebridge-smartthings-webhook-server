@@ -107,11 +107,12 @@ jobs:
       attestations: write
     env:
       IMAGE: ghcr.io/${{ github.repository }}
-      IMAGE_ARGS: |
-        GIT_REF=${{ github.ref_name }}
-        GIT_SHA=${{ github.sha }}
       IMAGE_CACHE_SRC: type=registry,ref=ghcr.io/${{ github.repository }}:latest-cache{0}
       IMAGE_GIT_REF_TAG:
+      IMAGE_ARGS:
+    outputs:
+      image_git_ref_tag: ${{ steps.define_image_git_ref_tag.outputs.image_git_ref_tag }}
+      image_digest: ${{ steps.build_and_push_image.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -139,12 +140,16 @@ jobs:
         run: npm version 0.0.0-dockerbuild --no-git-tag-version
       - name: Extract git tag if pushed by semantic release
         if: github.event_name != 'pull_request'
-        run: echo "IMAGE_GIT_REF_TAG=$(git describe --tags HEAD --candidates 0 || echo '${{ github.ref_name }}')" >> "$GITHUB_ENV"
+        id: define_image_git_ref_tag
+        run: |
+          echo "IMAGE_GIT_REF_TAG=$(git describe --tags HEAD --candidates 0 || echo '${{ github.ref_name }}')" >> "$GITHUB_ENV"
+          echo "IMAGE_ARGS=GIT_REF=$IMAGE_GIT_REF_TAG\\nGIT_SHA=${{ github.sha }}" >> "$GITHUB_ENV"
+          echo "image_git_ref_tag=$IMAGE_GIT_REF_TAG" >> "$GITHUB_OUTPUT"
       - name: Build${{ github.event_name != 'pull_request' && ' and push' || '' }} image
         uses: docker/build-push-action@v5
-        id: push
+        id: build_and_push_image
         env:
-          PR_IMAGE_TAG: 'pr-${{ github.event.number }}'
+          IMAGE_PR_NUMBER_TAG: 'pr-${{ github.event.number }}'
         with:
           context: .
           load: ${{ github.event_name == 'pull_request' }}
@@ -152,8 +157,8 @@ jobs:
           sbom: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ steps.meta.outputs.tags }}
-            ${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && env.PR_IMAGE_TAG || env.IMAGE_GIT_REF_TAG }}
-            ${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && env.PR_IMAGE_TAG || 'latest' }}
+            ${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && env.IMAGE_PR_NUMBER_TAG || env.IMAGE_GIT_REF_TAG }}
+            ${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && env.IMAGE_PR_NUMBER_TAG || 'latest' }}
           build-args: ${{ env.IMAGE_ARGS }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
@@ -186,7 +191,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         with:
           subject-name: ${{ env.IMAGE }}
-          subject-digest: ${{ steps.push.outputs.digest }}
+          subject-digest: ${{ steps.build_and_push_image.outputs.digest }}
           push-to-registry: true
 
   deploy:
@@ -196,13 +201,16 @@ jobs:
     needs: docker
     env:
       VERSION_URL: https://${{ vars.NORTHFLANK_CUSTOM_DOMAIN }}/version
+      NF_RELEASE_IMAGE_TAG: ${{ needs.docker.outputs.image_digest }}
+      NF_RELEASE_FLOW_RUN_NAME: 'Release ${{ needs.docker.outputs.image_git_ref_tag }}'
+      NF_RELEASE_FLOW_RUN_DESC: 'Release flow for git reference ${{ github.sha }}'
     environment:
       name: duddu.dev
       url: ${{ env.VERSION_URL }}
     steps:
       - name: Invoke Northflank pipeline webhook
         timeout-minutes: 1
-        run: curl -fs ${{ secrets.NORTHFLANK_WEBHOOK_URL }} >/dev/null
+        run: curl -fs ${{ secrets.NORTHFLANK_WEBHOOK_URL }}?name=${{ env.NF_RELEASE_FLOW_RUN_NAME }}&description=${{ env.NF_RELEASE_FLOW_RUN_DESC }}&image_tag=${{ env.NF_RELEASE_IMAGE_TAG }} >/dev/null
       - name: Verify deployed version
         timeout-minutes: 5
         run: |
