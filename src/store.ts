@@ -26,7 +26,7 @@ try {
     socket: {
       host: constants.HSWS_REDIS_HOST,
       port: +constants.HSWS_REDIS_PORT,
-      tls: constants.HSWS_REDIS_TSL_ENABLED === 'true',
+      tls: constants.HSWS_REDIS_TLS_ENABLED === 'true',
       connectTimeout: 10000,
       reconnectStrategy: (retries, cause) => {
         if (retries <= 10) {
