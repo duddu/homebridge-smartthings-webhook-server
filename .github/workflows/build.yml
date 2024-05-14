@@ -216,7 +216,7 @@ jobs:
       - name: Invoke Northflank pipeline webhook
         timeout-minutes: 1
         run: |
-          export HOOK_NAME_PARAM="Deploy%20Docker%20image%20from%20GitHub%20registry"
+          export HOOK_NAME_PARAM="Deploy%20Docker%20image"
           export HOOK_DESC_PARAM="Release%20flow%20for%20${{ env.NF_RELEASE_IMAGE_TAG }}%20(${{ github.sha }})"
           curl -fs "${{ secrets.NORTHFLANK_WEBHOOK_URL }}?name=$HOOK_NAME_PARAM&description=$HOOK_DESC_PARAM&image_digest=${{ env.NF_RELEASE_IMAGE_DIGEST }}"
       - name: Verify deployed version
