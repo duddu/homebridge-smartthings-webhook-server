@@ -99,7 +99,7 @@ jobs:
     needs:
       - test_and_compile
       - release
-    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || true }}
+    if: ${{ github.event_name != 'pull_request' || cancelled() || needs.release.result == 'cancelled' }}
     permissions:
       contents: write
       packages: write
