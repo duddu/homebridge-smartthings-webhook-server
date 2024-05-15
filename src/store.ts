@@ -91,7 +91,12 @@ export const clearCache = async (cacheKey: string): Promise<void> => {
   try {
     await Promise.all([
       redisClient.sRem(`${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`, cacheKey),
-      redisClient.set(`${DatabaseKeys.PREFIX}:${cacheKey}`, '__cleared__', { PX: 1 }),
+      redisClient.del([
+        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`,
+        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}`,
+        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
+        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.AUTHENTICATION_TOKENS}`,
+      ]),
     ]);
   } catch (e) {
     throw redisClientError(clearCache.name, e);
