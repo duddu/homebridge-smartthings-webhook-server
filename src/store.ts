@@ -90,7 +90,7 @@ export const clearCache = async (cacheKey: string): Promise<void> => {
   try {
     await Promise.all([
       redisClient.sRem(`${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`, cacheKey),
-      redisClient.del(`${DatabaseKeys.PREFIX}:${cacheKey}`),
+      redisClient.set(`${DatabaseKeys.PREFIX}:${cacheKey}`, '__cleared__', { PX: 1, XX: true }),
     ]);
   } catch (e) {
     logger.error(redisClientError(clearCache.name, e));
@@ -125,16 +125,17 @@ export const addDeviceEvent = async (
 export const flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]> => {
   try {
     const events: ShortEvent[] = [];
-    for await (const key of redisClient.scanIterator({
+    const eventHashKeys: string[] = [];
+    for await (const hashKey of redisClient.scanIterator({
       MATCH: `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:*`,
       COUNT: 1000,
     })) {
-      const eventHashKey = await redisClient.get(key);
-      if (typeof eventHashKey === 'string') {
-        events.push((await redisClient.hGetAll(eventHashKey)) as unknown as ShortEvent);
-        await redisClient.del(eventHashKey);
+      if (typeof hashKey === 'string') {
+        events.push((await redisClient.hGetAll(hashKey)) as unknown as ShortEvent);
+        eventHashKeys.push(hashKey);
       }
     }
+    await redisClient.del(eventHashKeys);
     return events;
   } catch (e) {
     throw redisClientError(flushDeviceEvents.name, e);
