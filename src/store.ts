@@ -165,29 +165,41 @@ export const flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]>
   }
 };
 
-export const getSubscribedDevicesIds = async (cacheKey: string): Promise<Set<string>> => {
+export const getSubscribedDevicesIds = async (cacheKey: string): Promise<string[]> => {
   try {
-    const devicesIds = await redisClient.sMembers(
+    return redisClient.sMembers(
       `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
     );
-    return new Set(devicesIds);
   } catch (e) {
     throw new HSWSError('Failed retrieving subscribed devices ids', e);
   }
 };
 
-export const setSubscribedDevicesIds = async (
+export const addSubscribedDevicesIds = async (
   cacheKey: string,
-  subscribedDevicesIds: Set<string>,
+  addedDevicesIds: string | string[],
 ): Promise<void> => {
   try {
-    const subIdsKey = `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`;
-    await Promise.all([
-      redisClient.del(subIdsKey),
-      redisClient.sAdd(subIdsKey, Array.from(subscribedDevicesIds)),
-    ]);
+    await redisClient.sAdd(
+      `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
+      addedDevicesIds,
+    );
   } catch (e) {
-    throw new HSWSError('Failed storing subscribed devices ids', e);
+    throw new HSWSError('Failed adding subscribed devices ids', e);
+  }
+};
+
+export const removeSubscribedDevicesIds = async (
+  cacheKey: string,
+  removedDevicesIds: string | string[],
+): Promise<void> => {
+  try {
+    await redisClient.sRem(
+      `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
+      removedDevicesIds,
+    );
+  } catch (e) {
+    throw new HSWSError('Failed removing subscribed devices ids', e);
   }
 };
 

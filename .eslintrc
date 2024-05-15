@@ -29,6 +29,7 @@
     "lines-between-class-members": ["warn", "always", {"exceptAfterSingleLine": true}],
     "no-return-assign": "warn",
     "no-return-await": "warn",
+    "no-param-reassign": "error",
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/explicit-module-boundary-types": "warn",
     "@typescript-eslint/no-non-null-assertion": "warn",
