@@ -124,14 +124,9 @@ export const addDeviceEvent = async (
 
 export const flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]> => {
   try {
-    const eventsQueueKey = `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}`;
-    if ((await redisClient.exists(eventsQueueKey)) === 0) {
-      return [];
-    }
     const eventsHashKeys: Set<string> = new Set();
     for await (const hashKey of redisClient.scanIterator({
-      MATCH: `${eventsQueueKey}:*`,
-      COUNT: 1000,
+      MATCH: `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:*`,
     })) {
       if (typeof hashKey === 'string') {
         eventsHashKeys.add(hashKey);
