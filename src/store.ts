@@ -19,8 +19,18 @@ const enum DatabaseKeys {
 
 const DEVICE_EVENTS_TTL = 604800;
 
-const redisClientError = (task: string, exception: unknown) =>
-  new HSWSError(`RedisClient::${task}`, exception);
+const redisClientReconnectStrategy = (retries: number, cause: Error) => {
+  if (retries <= 10) {
+    logger.warn('Reconnecting', { cause: cause.message });
+    return retries * 500;
+  }
+  logger.error(new HSWSError('Reconnection retries limit exceeded. Connection terminated.', cause));
+  return process.exit(1);
+};
+
+const redisOnErrorCallback = (error: Error) => {
+  logger.error(new HSWSError(`Redis error`, error));
+};
 
 let redisClient: ReturnType<typeof createClient>;
 
@@ -31,30 +41,16 @@ try {
       port: +constants.HSWS_REDIS_PORT,
       tls: constants.HSWS_REDIS_TLS_ENABLED === 'true',
       connectTimeout: 10000,
-      reconnectStrategy: (retries, cause) => {
-        if (retries <= 10) {
-          logger.warn('RedisClient: reconnecting', cause);
-          return retries * 500;
-        }
-        logger.error(
-          new HSWSError(
-            'RedisClient: reconnection retries limit exceeded. Connection terminated.',
-            cause,
-          ),
-        );
-        return process.exit(1);
-      },
+      reconnectStrategy: redisClientReconnectStrategy,
     },
     username: 'default',
     password: constants.HSWS_REDIS_PASSWORD,
     database: +(constants.HSWS_REDIS_DATABASE_NUMBER ?? 0),
   }).connect();
 
-  redisClient.on('error', (error) => {
-    logger.error(redisClientError('on(error)', error));
-  });
+  redisClient.on('error', redisOnErrorCallback);
 } catch (e) {
-  logger.error(redisClientError('connection failed', e));
+  logger.error(new HSWSError(`Redis connection failed`, e));
   process.exit(1);
 }
 
@@ -65,7 +61,7 @@ export const isValidCacheKey = async (cacheKey: string): Promise<boolean> => {
       cacheKey,
     );
   } catch (e) {
-    throw redisClientError(isValidCacheKey.name, e);
+    throw new HSWSError('Failed cache key validation', e);
   }
 };
 
@@ -83,7 +79,7 @@ export const initCache = async (
       }),
     ]);
   } catch (e) {
-    throw redisClientError(initCache.name, e);
+    throw new HSWSError('Failed cache initialization', e);
   }
 };
 
@@ -105,7 +101,7 @@ export const clearCache = async (cacheKey: string): Promise<void> => {
       ]),
     ]);
   } catch (e) {
-    throw redisClientError(clearCache.name, e);
+    throw new HSWSError('Failed clearing cache', e);
   }
 };
 
@@ -125,7 +121,7 @@ export const addDeviceEvent = async (
       redisClient.expire(`${eventsIdsKey}`, DEVICE_EVENTS_TTL),
     ]);
   } catch (e) {
-    throw redisClientError(addDeviceEvent.name, e);
+    throw new HSWSError('Failed adding new device event', e);
   }
 };
 
@@ -165,7 +161,7 @@ export const flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]>
         }),
     );
   } catch (e) {
-    throw redisClientError(flushDeviceEvents.name, e);
+    throw new HSWSError('Failed flushing device events', e);
   }
 };
 
@@ -176,7 +172,7 @@ export const getSubscribedDevicesIds = async (cacheKey: string): Promise<Set<str
     );
     return new Set(devicesIds);
   } catch (e) {
-    throw redisClientError(getSubscribedDevicesIds.name, e);
+    throw new HSWSError('Failed retrieving subscribed devices ids', e);
   }
 };
 
@@ -191,7 +187,7 @@ export const setSubscribedDevicesIds = async (
       redisClient.sAdd(subIdsKey, Array.from(subscribedDevicesIds)),
     ]);
   } catch (e) {
-    throw redisClientError(setSubscribedDevicesIds.name, e);
+    throw new HSWSError('Failed storing subscribed devices ids', e);
   }
 };
 
@@ -202,6 +198,6 @@ export const getAuthenticationTokens = async (cacheKey: string): Promise<HSWSSto
     );
     return { authToken, refreshToken };
   } catch (e) {
-    throw redisClientError(getAuthenticationTokens.name, e);
+    throw new HSWSError('Failed retrieving authentication tokens', e);
   }
 };

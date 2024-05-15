@@ -56,7 +56,7 @@ const subscribeToRegisteredDevices = async (
   if (unsubscribedDevicesIds.size === 0) {
     return;
   }
-  logger.debug('subscribeToRegisteredDevices(): Received new registered devices to subscribe to', {
+  logger.debug('Received new registered devices to subscribe to', {
     installedAppId,
     clientDevicesCount: registeredDevicesIds.size,
     subscribedDevicesCount: subscribedDevicesIds.size,
@@ -75,12 +75,11 @@ const subscribeToRegisteredDevices = async (
     await setSubscribedDevicesIds(installedAppId, subscribedDevicesIds);
   } catch (e) {
     throw new HSWSError(
-      'subscribeToRegisteredDevices(): Unable to subscribe installed app ' +
-        `${installedAppId} to registered devices events`,
+      'Unable to subscribe installed app ' + `${installedAppId} to registered devices events`,
       e,
     );
   }
-  logger.debug('subscribeToRegisteredDevices(): Subscribed to new registered devices events', {
+  logger.debug('Subscribed to new registered devices events', {
     installedAppId,
     subscribedDevicesCount: subscribedDevicesIds.size,
   });
@@ -105,7 +104,7 @@ const unsubscribeFromRemovedDevices = async (
   if (removedDevicesIds.size === 0) {
     return;
   }
-  logger.debug('unsubscribeFromRemovedDevices(): Received new devices to unsubscribe from', {
+  logger.debug('Received new devices to unsubscribe from', {
     installedAppId,
     clientDevicesCount: registeredDevicesIds.size,
     subscribedDevicesCount: subscribedDevicesIds.size,
@@ -128,12 +127,11 @@ const unsubscribeFromRemovedDevices = async (
     await setSubscribedDevicesIds(installedAppId, subscribedDevicesIds);
   } catch (e) {
     throw new HSWSError(
-      'unsubscribeFromRemovedDevices(): Unable to unsubscribe installed app ' +
-        `${installedAppId} from unregistered devices events`,
+      'Unable to unsubscribe installed app ' + `${installedAppId} from unregistered devices events`,
       e,
     );
   }
-  logger.debug('unsubscribeFromRemovedDevices(): Unsubscribed from unregistered devices events', {
+  logger.debug('Unsubscribed from unregistered devices events', {
     installedAppId,
     subscribedDevicesCount: subscribedDevicesIds.size,
   });

@@ -17,9 +17,7 @@ class HSWSConstants {
   private required(envVarKey: string): string {
     const { [envVarKey]: envVar } = process.env;
     if (!this.isEnvVarFilled(envVar)) {
-      throw new HSWSError(
-        `Constants: ${envVarKey} required environment variable is not set or empty`,
-      );
+      throw new HSWSError(`${envVarKey} required environment variable is not set or empty`);
     }
     return envVar;
   }

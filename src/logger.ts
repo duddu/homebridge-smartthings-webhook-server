@@ -14,7 +14,9 @@ const caller: Logform.FormatWrap = format((info) => {
   try {
     throw new Error();
   } catch (e) {
-    const callerMatch = (e as Error).stack?.split('\n')[10]?.match(/^\s*at\s+(.+)\s+\(/);
+    const callerMatch = (e as Error).stack
+      ?.split('DerivedLogger.<computed>')[1]
+      ?.match(/^\s*at\s+(.+)\s+\(/m);
     const callerFunction = Array.isArray(callerMatch) ? callerMatch[1] : null;
     if (typeof callerFunction === 'string' && callerFunction.trim() !== '') {
       return { ...info, message: `${callerFunction.trim()}(): ${info.message}` };

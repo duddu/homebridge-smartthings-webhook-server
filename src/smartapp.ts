@@ -33,7 +33,7 @@ const appInitializedCallback = (
   _initialization: Initialization,
   { installedAppId }: AppEvent.ConfigurationData,
 ): void => {
-  logger.debug('appInitializedCallback(): SmartApp initialized', { installedAppId });
+  logger.debug('SmartApp initialized', { installedAppId });
 };
 
 const defaultPageCallback = (
@@ -45,11 +45,11 @@ const defaultPageCallback = (
 
   if (typeof installedAppId !== 'string') {
     const message = 'Unable to retrieve installedAppId while loading user configuration page';
-    logger.error(`defaultPageCallback(): ${message}`, { configData });
+    logger.error(message, { configData });
     throw new HSWSError(message);
   }
 
-  logger.debug('defaultPageCallback(): Presenting user configuration page', { installedAppId });
+  logger.debug('Presenting user configuration page', { installedAppId });
 
   page.name(DEFAULT_PAGE_TITLE);
   page.section(WEBHOOK_TOKEN_CONFIG_DESCRIPTION, (section) => {
@@ -75,7 +75,7 @@ const appInstalledCallback = async (
 ): Promise<void> => {
   const { installedAppId } = installedApp;
 
-  logger.debug('appInstalledCallback(): SmartApp installed', { installedAppId });
+  logger.debug('SmartApp installed', { installedAppId });
 
   await api.subscriptions.delete();
 
@@ -88,9 +88,7 @@ const appUninstalledCallback = async (
 ): Promise<void> => {
   const { installedAppId } = installedApp;
 
-  logger.debug('appUninstalledCallback(): SmartApp uninstalled', {
-    installedAppId,
-  });
+  logger.debug('SmartApp uninstalled', { installedAppId });
 
   await clearCache(installedAppId);
 };
@@ -98,12 +96,10 @@ const appUninstalledCallback = async (
 const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEvent): void => {
   const { installedAppId } = api.config;
 
-  logger.debug('deviceEventCallback(): Device event received', { event, installedAppId });
+  logger.debug('Device event received', { event, installedAppId });
 
   if (typeof installedAppId !== 'string') {
-    logger.error(
-      'deviceEventCallback(): Unable to store the device event, installedAppId is not available',
-    );
+    logger.error('Unable to store the device event, installedAppId is not available');
     return;
   }
 
