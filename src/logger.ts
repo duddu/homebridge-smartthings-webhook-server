@@ -11,9 +11,12 @@ const enum LoggerCategories {
 const { combine, errors, json, label, metadata, timestamp } = format;
 
 const caller: Logform.FormatWrap = format((info) => {
+  const prevStackTraceLimit = Error.stackTraceLimit;
   try {
+    Error.stackTraceLimit = 25;
     throw new Error();
   } catch (e) {
+    Error.stackTraceLimit = prevStackTraceLimit;
     const callerMatch = (e as Error).stack
       ?.split('DerivedLogger.<computed>')[1]
       ?.match(/^\s*at\s+(.+)\s+\(/m);
