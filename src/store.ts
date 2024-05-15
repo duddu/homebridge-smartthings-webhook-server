@@ -11,10 +11,13 @@ export type HSWSStoreAuthTokens = Omit<AppEvent.InstallData, 'installedApp'>;
 const enum DatabaseKeys {
   PREFIX = 'HSWS',
   INSTALLED_APPS_IDS = 'installedAppsIds',
+  DEVICE_EVENTS_IDS = 'deviceEventsIds',
   DEVICE_EVENTS_QUEUE = 'deviceEventsQueue',
   SUBSCRIBED_DEVICES_IDS = 'subscribedDevicesIds',
   AUTHENTICATION_TOKENS = 'authenticationTokens',
 }
+
+const DEVICE_EVENTS_TTL = 604800;
 
 const redisClientError = (task: string, exception: unknown) =>
   new HSWSError(`RedisClient::${task}`, exception);
@@ -57,7 +60,7 @@ try {
 
 export const isValidCacheKey = async (cacheKey: string): Promise<boolean> => {
   try {
-    return await redisClient.sIsMember(
+    return redisClient.sIsMember(
       `${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`,
       cacheKey,
     );
@@ -101,17 +104,14 @@ export const addDeviceEvent = async (
   event: ShortEvent,
 ): Promise<void> => {
   try {
-    Promise.all([
-      redisClient.hSet(
-        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:${eventId}`,
-        {
-          ...event,
-        },
-      ),
-      redisClient.expire(
-        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:${eventId}`,
-        86400,
-      ),
+    const cacheKeyKey = `${DatabaseKeys.PREFIX}:${cacheKey}`;
+    const eventsIdsKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`;
+    const eventHashKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:${eventId}`;
+    await Promise.all([
+      redisClient.hSet(`${eventHashKey}`, { ...event }),
+      redisClient.expire(`${eventHashKey}`, DEVICE_EVENTS_TTL),
+      redisClient.sAdd(eventsIdsKey, eventId),
+      redisClient.expire(`${eventsIdsKey}`, DEVICE_EVENTS_TTL),
     ]);
   } catch (e) {
     throw redisClientError(addDeviceEvent.name, e);
@@ -120,25 +120,39 @@ export const addDeviceEvent = async (
 
 export const flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]> => {
   try {
-    const eventsHashKeys: Set<string> = new Set();
-    for await (const hashKey of redisClient.scanIterator({
-      MATCH: `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:*`,
-    })) {
-      if (typeof hashKey === 'string') {
-        eventsHashKeys.add(hashKey);
-      }
-    }
-    if (eventsHashKeys.size === 0) {
+    const cacheKeyKey = `${DatabaseKeys.PREFIX}:${cacheKey}`;
+    const eventsIdsKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`;
+    const eventsQueueKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}`;
+    if ((await redisClient.sCard(eventsIdsKey)) === 0) {
       return [];
     }
-    const eventsHashKeysList = Array.from(eventsHashKeys);
-    const events = await Promise.all(
-      eventsHashKeysList.map(
-        (hashKey) => redisClient.hGetAll(hashKey) as unknown as Promise<ShortEvent>,
-      ),
+    const eventsIds: Set<string> = new Set();
+    for await (const eventId of redisClient.sScanIterator(eventsIdsKey)) {
+      if (typeof eventId === 'string') {
+        eventsIds.add(eventId);
+      }
+    }
+    if (eventsIds.size === 0) {
+      return [];
+    }
+    return Promise.all(
+      Array.from(eventsIds)
+        .filter(async (eventId): Promise<boolean> => {
+          if ((await redisClient.exists(`${eventsQueueKey}:${eventId}`)) > 0) {
+            return true;
+          }
+          await redisClient.sRem(eventsIdsKey, eventId);
+          return false;
+        })
+        .map(async (eventId): Promise<ShortEvent> => {
+          const [event] = await Promise.all([
+            redisClient.hGetAll(`${eventsQueueKey}:${eventId}`) as unknown as Promise<ShortEvent>,
+            redisClient.del(`${eventsQueueKey}:${eventId}`),
+            redisClient.sRem(eventsIdsKey, eventId),
+          ]);
+          return event;
+        }),
     );
-    await redisClient.del(eventsHashKeysList);
-    return events;
   } catch (e) {
     throw redisClientError(flushDeviceEvents.name, e);
   }
