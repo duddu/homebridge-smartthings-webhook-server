@@ -13,13 +13,13 @@ const { combine, errors, json, label, metadata, timestamp } = format;
 const caller: Logform.FormatWrap = format((info) => {
   const prevStackTraceLimit = Error.stackTraceLimit;
   try {
-    Error.stackTraceLimit = 25;
+    Error.stackTraceLimit = 20;
     throw new Error();
   } catch (e) {
     Error.stackTraceLimit = prevStackTraceLimit;
     const callerMatch = (e as Error).stack
       ?.split('DerivedLogger.<computed>')[1]
-      ?.match(/^\s*at\s+(.+)\s+\(/m);
+      ?.match(/^\s*at\s+(\w+).+\(/m);
     const callerFunction = Array.isArray(callerMatch) ? callerMatch[1] : null;
     if (typeof callerFunction === 'string' && callerFunction.trim() !== '') {
       return { ...info, message: `${callerFunction.trim()}(): ${info.message}` };
