@@ -44,21 +44,19 @@ export const webhookTokenMiddleware: HSWSClientRequestHandler = async (req, res,
   const bearer = req.get('Authorization')?.replace('Bearer:', '').trim();
 
   if (typeof bearer !== 'string' || bearer === '') {
-    logger.error('webhookTokenMiddleware(): Unable to retrieve webhook token from request headers');
+    logger.error('Unable to retrieve webhook token from request headers');
     res.sendStatus(401);
     return;
   }
 
   try {
     if (!(await isValidCacheKey(bearer))) {
-      logger.error(
-        'webhookTokenMiddleware(): The webhook token present in the request is not valid',
-      );
+      logger.error('The webhook token present in the request is not valid');
       res.sendStatus(403);
       return;
     }
   } catch (e) {
-    logger.error('webhookTokenMiddleware(): Unable to validate request webhook token');
+    logger.error('Unable to validate request webhook token');
     res.sendStatus(403);
     return;
   }
@@ -83,7 +81,7 @@ export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res
 
   if (!Array.isArray(deviceIds)) {
     const message = 'Request body deviceIds field absent or malformed';
-    logger.error(`clientRequestMiddleware(): ${message}`, { deviceIds });
+    logger.error(message, { deviceIds });
 
     res.status(400).end(message);
 
@@ -92,7 +90,7 @@ export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res
 
   if (typeof timeout !== 'number') {
     const message = 'Request body timeout field absent or malformed';
-    logger.error(`clientRequestMiddleware(): ${message}`, { timeout });
+    logger.error(message, { timeout });
 
     res.status(400).end(message);
 

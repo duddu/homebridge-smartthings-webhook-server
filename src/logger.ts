@@ -10,12 +10,26 @@ const enum LoggerCategories {
 
 const { combine, errors, json, label, metadata, timestamp } = format;
 
+const caller: Logform.FormatWrap = format((info) => {
+  try {
+    throw new Error();
+  } catch (e) {
+    const callerMatch = (e as Error).stack?.split('\n')[10]?.match(/^\s*at\s+(.+)\s+\(/);
+    const callerFunction = Array.isArray(callerMatch) ? callerMatch[1] : null;
+    if (typeof callerFunction === 'string' && callerFunction.trim() !== '') {
+      return { ...info, message: `${callerFunction.trim()}(): ${info.message}` };
+    }
+    return info;
+  }
+});
+
 const getLoggerFormat = (category: LoggerCategories): Logform.Format =>
   combine(
     errors({ stack: constants.HSWS_LOG_LEVEL === 'silly' }),
     timestamp(),
     label({ label: category }),
     metadata({ key: 'data', fillExcept: ['label', 'level', 'message', 'timestamp'] }),
+    caller(),
     json(),
   );
 
