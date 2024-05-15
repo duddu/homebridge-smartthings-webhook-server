@@ -124,18 +124,29 @@ export const addDeviceEvent = async (
 
 export const flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]> => {
   try {
-    const events: ShortEvent[] = [];
-    const eventHashKeys: string[] = [];
+    const eventsQueueKey = `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}`;
+    if ((await redisClient.exists(eventsQueueKey)) === 0) {
+      return [];
+    }
+    const eventsHashKeys: Set<string> = new Set();
     for await (const hashKey of redisClient.scanIterator({
-      MATCH: `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:*`,
+      MATCH: `${eventsQueueKey}:*`,
       COUNT: 1000,
     })) {
       if (typeof hashKey === 'string') {
-        events.push((await redisClient.hGetAll(hashKey)) as unknown as ShortEvent);
-        eventHashKeys.push(hashKey);
+        eventsHashKeys.add(hashKey);
       }
     }
-    await redisClient.del(eventHashKeys);
+    if (eventsHashKeys.size === 0) {
+      return [];
+    }
+    const eventsHashKeysList = Array.from(eventsHashKeys);
+    const events = await Promise.all(
+      eventsHashKeysList.map(
+        (hashKey) => redisClient.hGetAll(hashKey) as unknown as Promise<ShortEvent>,
+      ),
+    );
+    await redisClient.del(eventsHashKeysList);
     return events;
   } catch (e) {
     throw redisClientError(flushDeviceEvents.name, e);
