@@ -19,7 +19,7 @@ const caller: Logform.FormatWrap = format((info) => {
     Error.stackTraceLimit = prevStackTraceLimit;
     const callerMatch = (e as Error).stack
       ?.split('DerivedLogger.<computed>')[1]
-      ?.match(/^\s*at\s+(\w+).+\(/m);
+      ?.match(/^\s*at\s+([\w.]+).+\(/m);
     const callerFunction = Array.isArray(callerMatch) ? callerMatch[1] : null;
     if (typeof callerFunction === 'string' && callerFunction.trim() !== '') {
       return { ...info, message: `${callerFunction.trim()}(): ${info.message}` };
