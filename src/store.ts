@@ -80,8 +80,7 @@ export const initCache = async (
       }),
     ]);
   } catch (e) {
-    logger.error(redisClientError(initCache.name, e));
-    throw e;
+    throw redisClientError(initCache.name, e);
   }
 };
 
@@ -92,8 +91,7 @@ export const clearCache = async (cacheKey: string): Promise<void> => {
       redisClient.set(`${DatabaseKeys.PREFIX}:${cacheKey}`, '__cleared__', { PX: 1, XX: true }),
     ]);
   } catch (e) {
-    logger.error(redisClientError(clearCache.name, e));
-    throw e;
+    throw redisClientError(clearCache.name, e);
   }
 };
 
@@ -116,8 +114,7 @@ export const addDeviceEvent = async (
       ),
     ]);
   } catch (e) {
-    logger.error(redisClientError(addDeviceEvent.name, e));
-    throw e;
+    throw redisClientError(addDeviceEvent.name, e);
   }
 };
 
