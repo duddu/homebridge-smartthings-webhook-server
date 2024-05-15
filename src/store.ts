@@ -88,7 +88,7 @@ export const clearCache = async (cacheKey: string): Promise<void> => {
   try {
     await Promise.all([
       redisClient.sRem(`${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`, cacheKey),
-      redisClient.set(`${DatabaseKeys.PREFIX}:${cacheKey}`, '__cleared__', { PX: 1, XX: true }),
+      redisClient.set(`${DatabaseKeys.PREFIX}:${cacheKey}`, '__cleared__', { PX: 1 }),
     ]);
   } catch (e) {
     throw redisClientError(clearCache.name, e);
