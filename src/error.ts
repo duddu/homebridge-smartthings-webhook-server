@@ -7,8 +7,12 @@ export class HSWSError extends Error {
     this.name = HSWSError.name;
 
     if (typeof exception !== 'undefined') {
-      this.cause =
-        exception instanceof Error ? `${exception.name}: ${exception.message}` : exception;
+      if (exception instanceof Error) {
+        this.cause = `${exception.name}: ${exception.message}`;
+        this.stack = exception.stack;
+      } else {
+        this.cause = exception;
+      }
     }
   }
 }
