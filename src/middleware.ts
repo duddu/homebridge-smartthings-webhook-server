@@ -49,8 +49,16 @@ export const webhookTokenMiddleware: HSWSClientRequestHandler = async (req, res,
     return;
   }
 
-  if (!(await isValidCacheKey(bearer))) {
-    logger.error('webhookTokenMiddleware(): The webhook token present in the request is not valid');
+  try {
+    if (!(await isValidCacheKey(bearer))) {
+      logger.error(
+        'webhookTokenMiddleware(): The webhook token present in the request is not valid',
+      );
+      res.sendStatus(403);
+      return;
+    }
+  } catch (e) {
+    logger.error('webhookTokenMiddleware(): Unable to validate request webhook token');
     res.sendStatus(403);
     return;
   }

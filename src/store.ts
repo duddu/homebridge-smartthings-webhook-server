@@ -62,8 +62,7 @@ export const isValidCacheKey = async (cacheKey: string): Promise<boolean> => {
       cacheKey,
     );
   } catch (e) {
-    logger.error(redisClientError(isValidCacheKey.name, e));
-    throw e;
+    throw redisClientError(isValidCacheKey.name, e);
   }
 };
 
