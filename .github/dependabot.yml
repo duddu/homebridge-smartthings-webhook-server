@@ -7,9 +7,14 @@ updates:
       npm dev dependencies:
         dependency-type: development
         applies-to: version-updates
+        update-types:
+          - minor
+          - patch
       npm prod dependencies:
         dependency-type: production
         applies-to: version-updates
+        update-types:
+          - patch
     schedule:
       interval: weekly
   - package-ecosystem: github-actions
