@@ -1,11 +1,18 @@
 version: 2
 updates:
-  - package-ecosystem: 'npm'
+  - package-ecosystem: npm
     directory: '/'
     versioning-strategy: increase
+    groups:
+      npm-dev-deps:
+        dependency-type: development
+        applies-to: version-updates
+      npm-prod-deps:
+        dependency-type: production
+        applies-to: version-updates
     schedule:
-      interval: 'weekly'
-  - package-ecosystem: 'github-actions'
+      interval: weekly
+  - package-ecosystem: github-actions
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: weekly
