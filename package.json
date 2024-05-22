@@ -65,8 +65,7 @@
   },
   "peerDependencies": {
     "@smartthings/core-sdk": "*",
-    "homebridge": "*",
-    "safe-stable-stringify": "*"
+    "homebridge": "*"
   },
   "config": {
     "src_dir": "./src",

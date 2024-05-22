@@ -4,7 +4,6 @@ import {
   RequestBody,
   ResponseBody,
 } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
-import { stringify } from 'safe-stable-stringify';
 
 import { constants } from './constants';
 import { flushDeviceEvents, isValidCacheKey } from './store';
@@ -118,11 +117,13 @@ export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res
     const events = await flushDeviceEvents(webhookToken);
 
     res.status(200).json({ timeout: false, events });
-  } catch (e) {
-    logger.error(e);
+  } catch (error) {
+    logger.error(error);
 
-    res.status(500).end(e instanceof Error ? e.message : stringify(e));
-
-    return;
+    res.status(500);
+    if (error instanceof Error && typeof error.message === 'string') {
+      res.statusMessage = error.message;
+    }
+    res.end();
   }
 };

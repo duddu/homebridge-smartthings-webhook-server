@@ -45,8 +45,7 @@
       },
       "peerDependencies": {
         "@smartthings/core-sdk": "*",
-        "homebridge": "*",
-        "safe-stable-stringify": "*"
+        "homebridge": "*"
       }
     },
     "node_modules/@ampproject/remapping": {
