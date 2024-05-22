@@ -4,10 +4,10 @@ updates:
     directory: '/'
     versioning-strategy: increase
     groups:
-      npm-dev-deps:
+      npm dev dependencies:
         dependency-type: development
         applies-to: version-updates
-      npm-prod-deps:
+      npm prod dependencies:
         dependency-type: production
         applies-to: version-updates
     schedule:
