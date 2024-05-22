@@ -99,7 +99,7 @@ jobs:
     needs:
       - test_and_compile
       - release
-    if: needs.release.result != 'failure'
+    if: always() && needs.release.result != 'failure'
     permissions:
       contents: write
       packages: write
