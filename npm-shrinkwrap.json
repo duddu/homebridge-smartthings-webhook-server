@@ -20,7 +20,7 @@
       "devDependencies": {
         "@jest/globals": "^29.7.0",
         "@semantic-release/commit-analyzer": "^12.0.0",
-        "@semantic-release/github": "^10.0.4",
+        "@semantic-release/github": "^10.0.5",
         "@semantic-release/npm": "^12.0.1",
         "@semantic-release/release-notes-generator": "^13.0.0",
         "@types/compression": "^1.7.5",
@@ -2483,9 +2483,9 @@
       }
     },
     "node_modules/@semantic-release/github": {
-      "version": "10.0.4",
-      "resolved": "https://registry.npmjs.org/@semantic-release/github/-/github-10.0.4.tgz",
-      "integrity": "sha512-eHCfW3jlzax5OKd5nTovlvoCdg+b9YBa31M2JGT1KmzmJR3TIalu2ahVU+V/xATVeOx+S8fbCiPnBBgMlzH5Vw==",
+      "version": "10.0.5",
+      "resolved": "https://registry.npmjs.org/@semantic-release/github/-/github-10.0.5.tgz",
+      "integrity": "sha512-hmuCDkfru/Uc9+ZBNOSremAupu6BCslvOVDiG0wYcL8TQodCycp6uvwDyeym1H0M4l3ob9c0s0xMBiZjjXQ2yA==",
       "dev": true,
       "dependencies": {
         "@octokit/core": "^6.0.0",
@@ -7620,9 +7620,9 @@
       }
     },
     "node_modules/hap-nodejs": {
-      "version": "0.12.0",
-      "resolved": "https://registry.npmjs.org/hap-nodejs/-/hap-nodejs-0.12.0.tgz",
-      "integrity": "sha512-W+KPE4kCtudt/WTEHlXLiZmgIC5IgK8TXpUPmp27Qm7TOfKwWVGhKYXWRBEr3bkgSe3CGuGQN8vFeRB//mpfhQ==",
+      "version": "0.12.1",
+      "resolved": "https://registry.npmjs.org/hap-nodejs/-/hap-nodejs-0.12.1.tgz",
+      "integrity": "sha512-iUUMaK6ucDKLMjT4m5Oz6CoLKkGg+omI6GR96weyL8fPGR1HYoCMtoJoUNW2NSIp4b2A6hx4zjNOEtLEaTA2MQ==",
       "peer": true,
       "dependencies": {
         "@homebridge/ciao": "^1.2.0",
@@ -7782,17 +7782,17 @@
       }
     },
     "node_modules/homebridge": {
-      "version": "1.8.1",
-      "resolved": "https://registry.npmjs.org/homebridge/-/homebridge-1.8.1.tgz",
-      "integrity": "sha512-tcyjT79m1SxBHf3bQyI9IEsXN0m1y0GPxPWvwhdJEycdliK0OyuYxzx4w1M5c7PHZknkZbQWCxFyaMTh7DHKUA==",
+      "version": "1.8.2",
+      "resolved": "https://registry.npmjs.org/homebridge/-/homebridge-1.8.2.tgz",
+      "integrity": "sha512-K0P9/qk3RdAKGLhGrmtF4skUjcygNlnBu0S/ssKIdp4p0kMzW2wjw2Q+z7TCxgZVy84/kaR09UD1n6uJAunTOQ==",
       "peer": true,
       "dependencies": {
         "chalk": "4.1.2",
         "commander": "12.0.0",
         "fs-extra": "11.2.0",
-        "hap-nodejs": "0.12.0",
+        "hap-nodejs": "0.12.1",
         "qrcode-terminal": "0.12.0",
-        "semver": "7.6.0",
+        "semver": "7.6.2",
         "source-map-support": "0.5.21"
       },
       "bin": {
@@ -7917,6 +7917,18 @@
       },
       "engines": {
         "node": ">=14.14"
+      }
+    },
+    "node_modules/homebridge/node_modules/semver": {
+      "version": "7.6.2",
+      "resolved": "https://registry.npmjs.org/semver/-/semver-7.6.2.tgz",
+      "integrity": "sha512-FNAIBWCx9qcRhoHcgcJ0gvU7SN1lYU2ZXuSfl04bSC5OpvDHFyJCjdNHomPXxjQlCBU67YW64PzY7/VIEH7F2w==",
+      "peer": true,
+      "bin": {
+        "semver": "bin/semver.js"
+      },
+      "engines": {
+        "node": ">=10"
       }
     },
     "node_modules/homebridge/node_modules/source-map-support": {
@@ -15148,6 +15160,7 @@
       "version": "7.6.0",
       "resolved": "https://registry.npmjs.org/semver/-/semver-7.6.0.tgz",
       "integrity": "sha512-EnwXhrlwXMk9gKu5/flx5sv/an57AkRplG3hTK68W7FRDN+k+OWBj65M7719OkA82XLBxrcX0KSHj+X5COhOVg==",
+      "dev": true,
       "dependencies": {
         "lru-cache": "^6.0.0"
       },
@@ -15189,6 +15202,7 @@
       "version": "6.0.0",
       "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-6.0.0.tgz",
       "integrity": "sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==",
+      "dev": true,
       "dependencies": {
         "yallist": "^4.0.0"
       },
@@ -15199,7 +15213,8 @@
     "node_modules/semver/node_modules/yallist": {
       "version": "4.0.0",
       "resolved": "https://registry.npmjs.org/yallist/-/yallist-4.0.0.tgz",
-      "integrity": "sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A=="
+      "integrity": "sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==",
+      "dev": true
     },
     "node_modules/send": {
       "version": "0.18.0",
