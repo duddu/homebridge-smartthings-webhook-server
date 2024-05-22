@@ -26,8 +26,7 @@
     "prebuild:ncc": "npm run prebuild",
     "build": "tsc --rootDir $npm_package_config_src_dir --outDir $npm_package_config_build_dir",
     "build:ncc": "npx @vercel/ncc build $npm_package_config_src_entry -mtC --target es2022 -o $npm_package_config_build_dir",
-    "prepublishOnly": "npm run build:ncc",
-    "ci:audit": "npm clean-install && npm audit signatures",
+    "prepublishOnly": "npm audit signatures && npm run build:ncc",
     "release": "semantic-release",
     "start": "node $npm_package_config_build_dir"
   },
