@@ -23,10 +23,10 @@ type HSWSOptionalConstantsKeys = keyof typeof HSWSOptionalConstants;
 
 type HSWSRequiredConstantsRecord = Record<HSWSRequiredConstantsKeys, string>;
 type HSWSOptionalConstantsRecord = Record<HSWSOptionalConstantsKeys, string | undefined>;
-type HSWSConstantsRecord = HSWSRequiredConstantsRecord & HSWSOptionalConstantsRecord;
+type HSWSConstantsRecords = HSWSRequiredConstantsRecord & HSWSOptionalConstantsRecord;
 
-type HSWSConstantsExcludedKeys = Exclude<keyof HSWSConstants, keyof HSWSConstantsRecord>;
-type HSWSConstantsType = Readonly<HSWSConstantsRecord & Record<HSWSConstantsExcludedKeys, never>>;
+type HSWSConstantsExcludedKeys = Exclude<keyof HSWSConstants, keyof HSWSConstantsRecords>;
+type HSWSConstantsType = Readonly<HSWSConstantsRecords & Record<HSWSConstantsExcludedKeys, never>>;
 
 class HSWSConstants implements HSWSConstantsType {
   public declare readonly HSWS_PORT: string;
@@ -43,23 +43,20 @@ class HSWSConstants implements HSWSConstantsType {
   public declare readonly STSA_SMART_APP_CLIENT_SECRET: string;
 
   constructor() {
-    for (const [[keys], validator] of new Map([
-      [[HSWSRequiredConstants], this.required.bind(this)],
-      [[HSWSOptionalConstants], this.optional.bind(this)],
-    ])) {
-      Object.defineProperties<typeof this>(
+    for (const [constants, validator] of this.validatorsMap) {
+      Object.defineProperties(
         this,
-        Object.keys(keys).reduce((props, key) => {
-          if (isNaN(Number(key))) {
-            props[key] = { get: () => validator(key) };
+        Object.values<string | number>(constants).reduce((properties, key) => {
+          if (typeof key === 'string') {
+            properties[key] = { get: () => validator(key) };
           }
-          return props;
+          return properties;
         }, {} as PropertyDescriptorMap),
       );
     }
   }
 
-  private required(key: string): string {
+  private getRequiredConstant(key: string): string {
     const { [key]: value } = process.env;
     if (typeof value !== 'string' || value.trim() === '') {
       throw new HSWSError(`Required environment variable "${key}" not set or empty`);
@@ -67,12 +64,22 @@ class HSWSConstants implements HSWSConstantsType {
     return value.trim();
   }
 
-  private optional(key: string): string | undefined {
+  private getOptionalConstant(key: string): string | undefined {
     try {
-      return this.required(key);
+      return this.getRequiredConstant(key);
     } catch (e) {
       return void 0;
     }
+  }
+
+  private get validatorsMap(): (
+    | [typeof HSWSRequiredConstants, typeof this.getRequiredConstant]
+    | [typeof HSWSOptionalConstants, typeof this.getOptionalConstant]
+  )[] {
+    return [
+      [HSWSRequiredConstants, this.getRequiredConstant.bind(this)],
+      [HSWSOptionalConstants, this.getOptionalConstant.bind(this)],
+    ];
   }
 }
 
