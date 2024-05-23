@@ -1,18 +1,60 @@
 import { HSWSError } from './error';
 
-class HSWSConstants {
-  public readonly HSWS_PORT = this.required('HSWS_PORT');
-  public readonly HSWS_VERSION = this.required('HSWS_VERSION');
-  public readonly HSWS_REVISION = this.required('HSWS_REVISION');
-  public readonly HSWS_LOG_LEVEL = this.required('HSWS_LOG_LEVEL');
-  public readonly HSWS_REDIS_HOST = this.required('HSWS_REDIS_HOST');
-  public readonly HSWS_REDIS_PORT = this.required('HSWS_REDIS_PORT');
-  public readonly HSWS_REDIS_PASSWORD = this.required('HSWS_REDIS_PASSWORD');
-  public readonly HSWS_REDIS_TLS_ENABLED = this.optional('HSWS_REDIS_TLS_ENABLED');
-  public readonly HSWS_REDIS_DATABASE_NUMBER = this.optional('HSWS_REDIS_DATABASE_NUMBER');
-  public readonly STSA_SMART_APP_ID = this.required('STSA_SMART_APP_ID');
-  public readonly STSA_SMART_APP_CLIENT_ID = this.required('STSA_SMART_APP_CLIENT_ID');
-  public readonly STSA_SMART_APP_CLIENT_SECRET = this.required('STSA_SMART_APP_CLIENT_SECRET');
+const REQUIRED_ENVIRONMENT_VARIABLES_KEYS = [
+  'HSWS_PORT',
+  'HSWS_VERSION',
+  'HSWS_REVISION',
+  'HSWS_LOG_LEVEL',
+  'HSWS_REDIS_HOST',
+  'HSWS_REDIS_PORT',
+  'HSWS_REDIS_PASSWORD',
+  'STSA_SMART_APP_ID',
+  'STSA_SMART_APP_CLIENT_ID',
+  'STSA_SMART_APP_CLIENT_SECRET',
+] as const;
+
+const OPTIONAL_ENVIRONMENT_VARIABLES_KEYS = [
+  'HSWS_REDIS_TLS_ENABLED',
+  'HSWS_REDIS_DATABASE_NUMBER',
+] as const;
+
+type HSWSConstantsRecord<K extends readonly string[]> = Record<K[number], Readonly<string>>;
+type HSWSRequiredConstantsRecord = Required<
+  HSWSConstantsRecord<typeof REQUIRED_ENVIRONMENT_VARIABLES_KEYS>
+>;
+type HSWSOptionalConstantsRecord = Partial<
+  HSWSConstantsRecord<typeof OPTIONAL_ENVIRONMENT_VARIABLES_KEYS>
+>;
+type HSWSConstantsRecords = HSWSRequiredConstantsRecord & HSWSOptionalConstantsRecord;
+type HSWSConstantsType = Readonly<
+  Record<Exclude<keyof HSWSConstants, keyof HSWSConstantsRecords>, never> & HSWSConstantsRecords
+>;
+
+class HSWSConstants implements HSWSConstantsType {
+  public declare readonly HSWS_PORT: string;
+  public declare readonly HSWS_VERSION: string;
+  public declare readonly HSWS_REVISION: string;
+  public declare readonly HSWS_LOG_LEVEL: string;
+  public declare readonly HSWS_REDIS_HOST: string;
+  public declare readonly HSWS_REDIS_PORT: string;
+  public declare readonly HSWS_REDIS_PASSWORD: string;
+  public declare readonly HSWS_REDIS_TLS_ENABLED?: string;
+  public declare readonly HSWS_REDIS_DATABASE_NUMBER?: string;
+  public declare readonly STSA_SMART_APP_ID: string;
+  public declare readonly STSA_SMART_APP_CLIENT_ID: string;
+  public declare readonly STSA_SMART_APP_CLIENT_SECRET: string;
+
+  constructor() {
+    for (const [[keys], validator] of new Map([
+      [[REQUIRED_ENVIRONMENT_VARIABLES_KEYS], this.required],
+      [[OPTIONAL_ENVIRONMENT_VARIABLES_KEYS], this.optional],
+    ])) {
+      Object.defineProperties(
+        this,
+        keys.reduce((props, key) => ({ ...props, [key]: { value: validator(key) } }), {}),
+      );
+    }
+  }
 
   private required(envVarKey: string): string {
     const { [envVarKey]: envVar } = process.env;
