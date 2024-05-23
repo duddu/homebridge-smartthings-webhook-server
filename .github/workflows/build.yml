@@ -107,6 +107,7 @@ jobs:
     env:
       IMAGE: ghcr.io/${{ github.repository }}
       IMAGE_CACHE_SRC: type=registry,ref=ghcr.io/${{ github.repository }}:latest-cache{0}
+      IMAGE_PR_NUMBER_TAG: 'pr-${{ github.event.number }}'
       IMAGE_GIT_REF_TAG:
       IMAGE_ARGS:
     outputs:
@@ -153,8 +154,6 @@ jobs:
       - name: Build${{ github.event_name != 'pull_request' && ' and push' || '' }} image
         uses: docker/build-push-action@v5
         id: build_and_push_image
-        env:
-          IMAGE_PR_NUMBER_TAG: 'pr-${{ github.event.number }}'
         with:
           context: .
           load: ${{ github.event_name == 'pull_request' }}
@@ -198,6 +197,17 @@ jobs:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.build_and_push_image.outputs.digest }}
           push-to-registry: true
+      - name: Snyk image security scan
+        uses: snyk/actions/docker@0.4.0
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: "${{ env.IMAGE }}:${{ github.event_name == 'pull_request' && env.IMAGE_PR_NUMBER_TAG || env.IMAGE_GIT_REF_TAG }}"
+      - name: Upload Synk scan result 
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk.sarif
 
   deploy:
     name: Deploy on Northflank
