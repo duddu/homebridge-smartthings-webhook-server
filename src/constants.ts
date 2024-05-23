@@ -1,34 +1,32 @@
 import { HSWSError } from './error';
 
-const REQUIRED_ENVIRONMENT_VARIABLES_KEYS = [
-  'HSWS_PORT',
-  'HSWS_VERSION',
-  'HSWS_REVISION',
-  'HSWS_LOG_LEVEL',
-  'HSWS_REDIS_HOST',
-  'HSWS_REDIS_PORT',
-  'HSWS_REDIS_PASSWORD',
-  'STSA_SMART_APP_ID',
-  'STSA_SMART_APP_CLIENT_ID',
-  'STSA_SMART_APP_CLIENT_SECRET',
-] as const;
+enum HSWSRequiredConstants {
+  HSWS_PORT,
+  HSWS_VERSION,
+  HSWS_REVISION,
+  HSWS_LOG_LEVEL,
+  HSWS_REDIS_HOST,
+  HSWS_REDIS_PORT,
+  HSWS_REDIS_PASSWORD,
+  STSA_SMART_APP_ID,
+  STSA_SMART_APP_CLIENT_ID,
+  STSA_SMART_APP_CLIENT_SECRET,
+}
 
-const OPTIONAL_ENVIRONMENT_VARIABLES_KEYS = [
-  'HSWS_REDIS_TLS_ENABLED',
-  'HSWS_REDIS_DATABASE_NUMBER',
-] as const;
+enum HSWSOptionalConstants {
+  HSWS_REDIS_TLS_ENABLED,
+  HSWS_REDIS_DATABASE_NUMBER,
+}
 
-type HSWSConstantsRecord<K extends readonly string[]> = Record<K[number], Readonly<string>>;
-type HSWSRequiredConstantsRecord = Required<
-  HSWSConstantsRecord<typeof REQUIRED_ENVIRONMENT_VARIABLES_KEYS>
->;
-type HSWSOptionalConstantsRecord = Partial<
-  HSWSConstantsRecord<typeof OPTIONAL_ENVIRONMENT_VARIABLES_KEYS>
->;
-type HSWSConstantsRecords = HSWSRequiredConstantsRecord & HSWSOptionalConstantsRecord;
-type HSWSConstantsType = Readonly<
-  Record<Exclude<keyof HSWSConstants, keyof HSWSConstantsRecords>, never> & HSWSConstantsRecords
->;
+type HSWSRequiredConstantsKeys = keyof typeof HSWSRequiredConstants;
+type HSWSOptionalConstantsKeys = keyof typeof HSWSOptionalConstants;
+
+type HSWSRequiredConstantsRecord = Record<HSWSRequiredConstantsKeys, string>;
+type HSWSOptionalConstantsRecord = Record<HSWSOptionalConstantsKeys, string | undefined>;
+type HSWSConstantsRecord = HSWSRequiredConstantsRecord & HSWSOptionalConstantsRecord;
+
+type HSWSConstantsExcludedKeys = Exclude<keyof HSWSConstants, keyof HSWSConstantsRecord>;
+type HSWSConstantsType = Readonly<HSWSConstantsRecord & Record<HSWSConstantsExcludedKeys, never>>;
 
 class HSWSConstants implements HSWSConstantsType {
   public declare readonly HSWS_PORT: string;
@@ -38,45 +36,43 @@ class HSWSConstants implements HSWSConstantsType {
   public declare readonly HSWS_REDIS_HOST: string;
   public declare readonly HSWS_REDIS_PORT: string;
   public declare readonly HSWS_REDIS_PASSWORD: string;
-  public declare readonly HSWS_REDIS_TLS_ENABLED?: string;
-  public declare readonly HSWS_REDIS_DATABASE_NUMBER?: string;
+  public declare readonly HSWS_REDIS_TLS_ENABLED: string | undefined;
+  public declare readonly HSWS_REDIS_DATABASE_NUMBER: string | undefined;
   public declare readonly STSA_SMART_APP_ID: string;
   public declare readonly STSA_SMART_APP_CLIENT_ID: string;
   public declare readonly STSA_SMART_APP_CLIENT_SECRET: string;
 
   constructor() {
     for (const [[keys], validator] of new Map([
-      [[REQUIRED_ENVIRONMENT_VARIABLES_KEYS], this.required.bind(this)],
-      [[OPTIONAL_ENVIRONMENT_VARIABLES_KEYS], this.optional.bind(this)],
+      [[HSWSRequiredConstants], this.required.bind(this)],
+      [[HSWSOptionalConstants], this.optional.bind(this)],
     ])) {
       Object.defineProperties<typeof this>(
         this,
-        keys.reduce(
-          (props, key) => ({ ...props, [key]: { value: validator(key) } }),
-          {} as PropertyDescriptorMap,
-        ),
+        Object.keys(keys).reduce((props, key) => {
+          if (isNaN(Number(key))) {
+            props[key] = { get: () => validator(key) };
+          }
+          return props;
+        }, {} as PropertyDescriptorMap),
       );
     }
   }
 
-  private required(envVarKey: string): string {
-    const { [envVarKey]: envVar } = process.env;
-    if (!this.isEnvVarFilled(envVar)) {
-      throw new HSWSError(`Required environment variable ${envVarKey} is not set or empty`);
+  private required(key: string): string {
+    const { [key]: value } = process.env;
+    if (typeof value !== 'string' || value.trim() === '') {
+      throw new HSWSError(`Required environment variable "${key}" not set or empty`);
     }
-    return envVar.trim();
+    return value.trim();
   }
 
-  private optional(envVarKey: string): string | undefined {
+  private optional(key: string): string | undefined {
     try {
-      return this.required(envVarKey);
+      return this.required(key);
     } catch (e) {
       return void 0;
     }
-  }
-
-  private isEnvVarFilled(envVar: string | undefined): envVar is string {
-    return typeof envVar === 'string' && envVar.trim() !== '';
   }
 }
 
