@@ -17,22 +17,22 @@ class HSWSConstants {
   private required(envVarKey: string): string {
     const { [envVarKey]: envVar } = process.env;
     if (!this.isEnvVarFilled(envVar)) {
-      throw new HSWSError(`${envVarKey} required environment variable is not set or empty`);
+      throw new HSWSError(`Required environment variable ${envVarKey} is not set or empty`);
     }
-    return envVar;
+    return envVar.trim();
   }
 
   private optional(envVarKey: string): string | undefined {
-    const { [envVarKey]: envVar } = process.env;
-    if (!this.isEnvVarFilled(envVar)) {
-      return undefined;
+    try {
+      return this.required(envVarKey);
+    } catch (e) {
+      return void 0;
     }
-    return envVar;
   }
 
   private isEnvVarFilled(envVar: string | undefined): envVar is string {
-    return typeof envVar === 'string' && envVar.trim().length > 0;
+    return typeof envVar === 'string' && envVar.trim() !== '';
   }
 }
 
-export const constants = new HSWSConstants();
+export const constants = Object.freeze(new HSWSConstants());
