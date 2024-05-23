@@ -46,12 +46,15 @@ class HSWSConstants implements HSWSConstantsType {
 
   constructor() {
     for (const [[keys], validator] of new Map([
-      [[REQUIRED_ENVIRONMENT_VARIABLES_KEYS], this.required],
-      [[OPTIONAL_ENVIRONMENT_VARIABLES_KEYS], this.optional],
+      [[REQUIRED_ENVIRONMENT_VARIABLES_KEYS], this.required.bind(this)],
+      [[OPTIONAL_ENVIRONMENT_VARIABLES_KEYS], this.optional.bind(this)],
     ])) {
-      Object.defineProperties(
+      Object.defineProperties<typeof this>(
         this,
-        keys.reduce((props, key) => ({ ...props, [key]: { value: validator(key) } }), {}),
+        keys.reduce(
+          (props, key) => ({ ...props, [key]: { value: validator(key) } }),
+          {} as PropertyDescriptorMap,
+        ),
       );
     }
   }
