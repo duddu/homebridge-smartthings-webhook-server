@@ -26,9 +26,9 @@ type HSWSOptionalConstantsRecord = Record<HSWSOptionalConstantsKeys, string | un
 type HSWSConstantsRecords = HSWSRequiredConstantsRecord & HSWSOptionalConstantsRecord;
 
 type HSWSConstantsExcludedKeys = Exclude<keyof HSWSConstants, keyof HSWSConstantsRecords>;
-type HSWSConstantsType = Readonly<HSWSConstantsRecords & Record<HSWSConstantsExcludedKeys, never>>;
+type HSWSTConstants = Readonly<HSWSConstantsRecords & Record<HSWSConstantsExcludedKeys, never>>;
 
-class HSWSConstants implements HSWSConstantsType {
+class HSWSConstants implements HSWSTConstants {
   public readonly HSWS_PORT: string;
   public readonly HSWS_VERSION: string;
   public readonly HSWS_REVISION: string;
