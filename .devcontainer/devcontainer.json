@@ -7,7 +7,10 @@
     "context": "..",
     "dockerfile": "../Dockerfile",
     "target": "builder",
-    "cacheFrom": "ghcr.io/duddu/homebridge-smartthings-webhook-server:latest-cache-arm64"
+    "cacheFrom": [
+      "ghcr.io/duddu/homebridge-smartthings-webhook-server:latest-cache-arm64",
+      "ghcr.io/duddu/homebridge-smartthings-webhook-server:latest-cache-amd64"
+    ]
   },
 
   // Features to add to the dev container. More info: https://containers.dev/features.
