@@ -1,6 +1,6 @@
 import { HSWSError } from './error';
 
-enum HSWSRequiredConstants {
+const enum HSWSRequiredConstants {
   HSWS_PORT = 'HSWS_PORT',
   HSWS_VERSION = 'HSWS_VERSION',
   HSWS_REVISION = 'HSWS_REVISION',
@@ -13,7 +13,7 @@ enum HSWSRequiredConstants {
   STSA_SMART_APP_CLIENT_SECRET = 'STSA_SMART_APP_CLIENT_SECRET',
 }
 
-enum HSWSOptionalConstants {
+const enum HSWSOptionalConstants {
   HSWS_REDIS_TLS_ENABLED = 'HSWS_REDIS_TLS_ENABLED',
   HSWS_REDIS_DATABASE_NUMBER = 'HSWS_REDIS_DATABASE_NUMBER',
 }
@@ -21,47 +21,64 @@ enum HSWSOptionalConstants {
 type HSWSRequiredConstantsKeys = keyof typeof HSWSRequiredConstants;
 type HSWSOptionalConstantsKeys = keyof typeof HSWSOptionalConstants;
 
-type HSWSRequiredConstantsRecord = Record<HSWSRequiredConstantsKeys, string>;
-type HSWSOptionalConstantsRecord = Record<HSWSOptionalConstantsKeys, string | undefined>;
-type HSWSConstantsRecords = HSWSRequiredConstantsRecord & HSWSOptionalConstantsRecord;
+type HSWSDefinedConstants = {
+  [K in HSWSRequiredConstantsKeys]: string;
+} & {
+  [K in HSWSOptionalConstantsKeys]: string | undefined;
+} & {
+  [K in Exclude<keyof HSWSConstants, HSWSRequiredConstantsKeys | HSWSOptionalConstantsKeys>]: never;
+};
 
-type HSWSConstantsExcludedKeys = Exclude<keyof HSWSConstants, keyof HSWSConstantsRecords>;
-type HSWSTConstants = Readonly<HSWSConstantsRecords & Record<HSWSConstantsExcludedKeys, never>>;
-
-class HSWSConstants implements HSWSTConstants {
-  public readonly HSWS_PORT: string;
-  public readonly HSWS_VERSION: string;
-  public readonly HSWS_REVISION: string;
-  public readonly HSWS_LOG_LEVEL: string;
-  public readonly HSWS_REDIS_HOST: string;
-  public readonly HSWS_REDIS_PORT: string;
-  public readonly HSWS_REDIS_PASSWORD: string;
-  public readonly HSWS_REDIS_TLS_ENABLED: string | undefined;
-  public readonly HSWS_REDIS_DATABASE_NUMBER: string | undefined;
-  public readonly STSA_SMART_APP_ID: string;
-  public readonly STSA_SMART_APP_CLIENT_ID: string;
-  public readonly STSA_SMART_APP_CLIENT_SECRET: string;
-
-  constructor() {
-    this.HSWS_PORT = this.required(HSWSRequiredConstants.HSWS_PORT);
-    this.HSWS_VERSION = this.required(HSWSRequiredConstants.HSWS_VERSION);
-    this.HSWS_REVISION = this.required(HSWSRequiredConstants.HSWS_REVISION);
-    this.HSWS_LOG_LEVEL = this.required(HSWSRequiredConstants.HSWS_LOG_LEVEL);
-    this.HSWS_REDIS_HOST = this.required(HSWSRequiredConstants.HSWS_REDIS_HOST);
-    this.HSWS_REDIS_PORT = this.required(HSWSRequiredConstants.HSWS_REDIS_PORT);
-    this.HSWS_REDIS_PASSWORD = this.required(HSWSRequiredConstants.HSWS_REDIS_PASSWORD);
-    this.HSWS_REDIS_TLS_ENABLED = this.optional(HSWSOptionalConstants.HSWS_REDIS_TLS_ENABLED);
-    this.HSWS_REDIS_DATABASE_NUMBER = this.optional(
-      HSWSOptionalConstants.HSWS_REDIS_DATABASE_NUMBER,
-    );
-    this.STSA_SMART_APP_ID = this.required(HSWSRequiredConstants.STSA_SMART_APP_ID);
-    this.STSA_SMART_APP_CLIENT_ID = this.required(HSWSRequiredConstants.STSA_SMART_APP_CLIENT_ID);
-    this.STSA_SMART_APP_CLIENT_SECRET = this.required(
-      HSWSRequiredConstants.STSA_SMART_APP_CLIENT_SECRET,
-    );
+class HSWSConstants implements HSWSDefinedConstants {
+  public get HSWS_PORT(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.HSWS_PORT);
   }
 
-  private required(key: HSWSRequiredConstantsKeys): string {
+  public get HSWS_VERSION(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.HSWS_VERSION);
+  }
+
+  public get HSWS_REVISION(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.HSWS_REVISION);
+  }
+
+  public get HSWS_LOG_LEVEL(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.HSWS_LOG_LEVEL);
+  }
+
+  public get HSWS_REDIS_HOST(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.HSWS_REDIS_HOST);
+  }
+
+  public get HSWS_REDIS_PORT(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.HSWS_REDIS_PORT);
+  }
+
+  public get HSWS_REDIS_PASSWORD(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.HSWS_REDIS_PASSWORD);
+  }
+
+  public get HSWS_REDIS_TLS_ENABLED(): string | undefined {
+    return this.getOptionalConstant(HSWSOptionalConstants.HSWS_REDIS_TLS_ENABLED);
+  }
+
+  public get HSWS_REDIS_DATABASE_NUMBER(): string | undefined {
+    return this.getOptionalConstant(HSWSOptionalConstants.HSWS_REDIS_DATABASE_NUMBER);
+  }
+
+  public get STSA_SMART_APP_ID(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.STSA_SMART_APP_ID);
+  }
+
+  public get STSA_SMART_APP_CLIENT_ID(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.STSA_SMART_APP_CLIENT_ID);
+  }
+
+  public get STSA_SMART_APP_CLIENT_SECRET(): string {
+    return this.getRequiredConstant(HSWSRequiredConstants.STSA_SMART_APP_CLIENT_SECRET);
+  }
+
+  private getRequiredConstant(key: HSWSRequiredConstantsKeys): string {
     const { [key]: value } = process.env;
     if (this.isNotEmpty(value)) {
       return value.trim();
@@ -69,7 +86,7 @@ class HSWSConstants implements HSWSTConstants {
     throw new HSWSError(`Required environment variable "${key}" not set or empty`);
   }
 
-  private optional(key: HSWSOptionalConstantsKeys): string | undefined {
+  private getOptionalConstant(key: HSWSOptionalConstantsKeys): string | undefined {
     const { [key]: value } = process.env;
     return this.isNotEmpty(value) ? value.trim() : undefined;
   }
