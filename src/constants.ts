@@ -1,6 +1,6 @@
 import { HSWSError } from './error';
 
-const enum HSWSRequiredConstants {
+export enum HSWSRequiredConstants {
   HSWS_PORT = 'HSWS_PORT',
   HSWS_VERSION = 'HSWS_VERSION',
   HSWS_REVISION = 'HSWS_REVISION',
@@ -13,7 +13,7 @@ const enum HSWSRequiredConstants {
   STSA_SMART_APP_CLIENT_SECRET = 'STSA_SMART_APP_CLIENT_SECRET',
 }
 
-const enum HSWSOptionalConstants {
+export enum HSWSOptionalConstants {
   HSWS_REDIS_TLS_ENABLED = 'HSWS_REDIS_TLS_ENABLED',
   HSWS_REDIS_DATABASE_NUMBER = 'HSWS_REDIS_DATABASE_NUMBER',
 }

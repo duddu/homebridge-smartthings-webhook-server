@@ -20,7 +20,7 @@
   "scripts": {
     "lint": "eslint **/*.ts",
     "prettier": "prettier --log-level warn --write .",
-    "test": "jest --silent --forceExit --detectOpenHandles --passWithNoTests",
+    "test": "jest --silent --forceExit --detectOpenHandles",
     "test:watch": "npm run test -- --watch --no-coverage",
     "prebuild": "rimraf $npm_package_config_build_dir",
     "prebuild:ncc": "npm run prebuild",
