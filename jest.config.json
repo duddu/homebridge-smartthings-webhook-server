@@ -3,7 +3,7 @@
   "collectCoverage": true,
   "coverageDirectory": "coverage",
   "coveragePathIgnorePatterns": ["/node_modules/"],
-  "coverageProvider": "v8",
+  "coverageProvider": "babel",
   "preset": "ts-jest",
   "testEnvironment": "node",
   "transform": {
