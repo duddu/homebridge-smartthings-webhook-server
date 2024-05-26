@@ -35,7 +35,6 @@
     "compression": "^1.7.4",
     "express": "^4.19.2",
     "express-slow-down": "^2.0.3",
-    "node-cache": "^5.1.2",
     "redis": "^4.6.14",
     "winston": "^3.13.0"
   },
