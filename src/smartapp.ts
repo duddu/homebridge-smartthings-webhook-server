@@ -1,5 +1,11 @@
 import { InstalledAppConfiguration } from '@smartthings/core-sdk';
-import { Page, SmartApp, SmartAppContext } from '@smartthings/smartapp';
+import {
+  ContextRecord,
+  ContextStore,
+  Page,
+  SmartApp,
+  SmartAppContext,
+} from '@smartthings/smartapp';
 import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
 import { Initialization } from '@smartthings/smartapp/lib/util/initialization';
 
@@ -7,7 +13,7 @@ import { constants } from './constants';
 import { HSWSError } from './error';
 import { storeDeviceEvent } from './events';
 import { logger, smartAppLogger } from './logger';
-import { initCache, clearCache } from './store';
+import { clearCache, getAuthenticationTokens, initCache, setAuthenticationTokens } from './store';
 
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
 const WEBHOOK_TOKEN_CONFIG_NAME = 'Webhook Token';
@@ -106,6 +112,39 @@ const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEve
   storeDeviceEvent(installedAppId, event);
 };
 
+class HSWSContextStore implements ContextStore {
+  public get = async (installedAppId: string): Promise<ContextRecord> => ({
+    installedAppId,
+    ...(await getAuthenticationTokens(installedAppId)),
+  });
+
+  public put = async (appContext: ContextRecord): Promise<ContextRecord> => {
+    const { installedAppId, authToken, refreshToken } = appContext;
+    await setAuthenticationTokens(installedAppId, { authToken, refreshToken });
+    return appContext;
+  };
+
+  public update = async (
+    installedAppId: string,
+    updatedAppContext: Partial<ContextRecord>,
+  ): Promise<Partial<ContextRecord>> => {
+    const { authToken: updatedAuthToken, refreshToken: updatedRefreshToken } = updatedAppContext;
+    if (typeof updatedAuthToken === 'string' || typeof updatedRefreshToken === 'string') {
+      const { authToken: currentAuthToken, refreshToken: currentRefreshToken } =
+        await getAuthenticationTokens(installedAppId);
+      if (updatedAuthToken !== currentAuthToken || updatedRefreshToken !== currentRefreshToken) {
+        await setAuthenticationTokens(installedAppId, {
+          authToken: updatedAuthToken ?? currentAuthToken,
+          refreshToken: updatedRefreshToken ?? currentRefreshToken,
+        });
+      }
+    }
+    return updatedAppContext;
+  };
+
+  public delete = async (installedAppId: string): Promise<void> => clearCache(installedAppId);
+}
+
 export const smartApp = new SmartApp()
   .configureLogger(smartAppLogger)
   .enableEventLogging(2, EVENT_LOGGING_ENABLED)
@@ -113,6 +152,7 @@ export const smartApp = new SmartApp()
   .clientId(constants.STSA_SMART_APP_CLIENT_ID)
   .clientSecret(constants.STSA_SMART_APP_CLIENT_SECRET)
   .permissions(SMART_APP_PERMISSIONS)
+  .contextStore(new HSWSContextStore())
   .defaultPage(defaultPageCallback)
   .initialized(appInitializedCallback)
   .installed(appInstalledCallback)

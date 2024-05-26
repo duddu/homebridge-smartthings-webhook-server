@@ -50,7 +50,7 @@ export const webhookTokenMiddleware: HSWSClientRequestHandler = async (req, res,
 
   try {
     if (!(await isValidCacheKey(bearer))) {
-      logger.error('The webhook token present in the request is not valid');
+      logger.error('The webhook token provided does not match any installed application id');
       res.sendStatus(403);
       return;
     }

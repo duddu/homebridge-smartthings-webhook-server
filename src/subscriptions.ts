@@ -47,6 +47,13 @@ export const ensureSubscriptions = async (
     subscribedDevicesIds: await getSubscribedDevicesIds(webhookToken),
   };
 
+  if (typeof subscriptionsContext.subscriptionsEndpoint === 'undefined') {
+    throw new HSWSError(
+      `The smart app context for the requested app id ${webhookToken} is not available. ` +
+        'This app has likely been uninstalled from SmartThings.',
+    );
+  }
+
   for (const task of [subscribeToRegisteredDevices, unsubscribeFromRemovedDevices]) {
     await task(registeredDevicesIdsList, subscriptionsContext);
   }

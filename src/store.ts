@@ -73,10 +73,7 @@ export const initCache = async (
   try {
     await Promise.all([
       redisClient.sAdd(`${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`, cacheKey),
-      redisClient.hSet(`${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.AUTHENTICATION_TOKENS}`, {
-        authToken,
-        refreshToken,
-      }),
+      setAuthenticationTokens(cacheKey, { authToken, refreshToken }),
     ]);
   } catch (e) {
     throw new HSWSError('Failed cache initialization', e);
@@ -211,5 +208,19 @@ export const getAuthenticationTokens = async (cacheKey: string): Promise<HSWSSto
     return { authToken, refreshToken };
   } catch (e) {
     throw new HSWSError('Failed retrieving authentication tokens', e);
+  }
+};
+
+export const setAuthenticationTokens = async (
+  cacheKey: string,
+  authTokens: HSWSStoreAuthTokens,
+): Promise<void> => {
+  try {
+    redisClient.hSet(
+      `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.AUTHENTICATION_TOKENS}`,
+      authTokens,
+    );
+  } catch (e) {
+    throw new HSWSError('Failed setting authentication tokens', e);
   }
 };
