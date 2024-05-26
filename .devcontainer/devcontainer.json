@@ -1,35 +1,25 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
-  "name": "Dockerfile (target: builder)",
+  "name": "Node LTS",
 
-  "build": {
-    "context": "..",
-    "dockerfile": "../Dockerfile",
-    "target": "builder",
-    "cacheFrom": [
-      "ghcr.io/duddu/homebridge-smartthings-webhook-server:latest-cache-arm64",
-      "ghcr.io/duddu/homebridge-smartthings-webhook-server:latest-cache-amd64"
-    ]
-  },
+  "image": "node:lts",
 
   // Features to add to the dev container. More info: https://containers.dev/features.
   "features": {
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers-contrib/features/bash-command:1": {},
-    "ghcr.io/devcontainers-contrib/features/npm-package:1": {},
+    "ghcr.io/devcontainers-contrib/features/vercel-ncc:1": {},
     "ghcr.io/devcontainers-contrib/features/cz-cli:1": {}
-  }
+  },
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
 
   // Uncomment the next line to run commands after the container is created.
-  // "postCreateCommand": "cat /etc/os-release",
+  "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
 
   // Configure tool-specific properties.
   // "customizations": {},
 
   // Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
-  // "remoteUser": "devcontainer"
+  "remoteUser": "node"
 }
