@@ -17,7 +17,7 @@ const enum DatabaseKeys {
   AUTHENTICATION_TOKENS = 'authenticationTokens',
 }
 
-const DEVICE_EVENTS_TTL = 604800;
+const DEVICE_EVENTS_TTL_SEC = 604800;
 
 const redisClientReconnectStrategy = (retries: number, cause: Error) => {
   if (retries <= 10) {
@@ -112,10 +112,10 @@ export const addDeviceEvent = async (
     const eventsIdsKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`;
     const eventHashKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:${eventId}`;
     await Promise.all([
-      redisClient.hSet(`${eventHashKey}`, { ...event }),
-      redisClient.expire(`${eventHashKey}`, DEVICE_EVENTS_TTL),
+      redisClient.hSet(eventHashKey, { ...event }),
+      redisClient.expire(eventHashKey, DEVICE_EVENTS_TTL_SEC),
       redisClient.sAdd(eventsIdsKey, eventId),
-      redisClient.expire(`${eventsIdsKey}`, DEVICE_EVENTS_TTL),
+      redisClient.expire(eventsIdsKey, DEVICE_EVENTS_TTL_SEC),
     ]);
   } catch (e) {
     throw new HSWSError('Failed adding new device event', e);
