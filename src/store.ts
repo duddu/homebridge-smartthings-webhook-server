@@ -22,7 +22,7 @@ const DEVICE_EVENTS_TTL_SEC = 604800;
 const redisClientReconnectStrategy = (retries: number, cause: Error) => {
   if (retries <= 10) {
     logger.warn('Reconnecting', { cause: cause.message });
-    return retries * 500;
+    return retries * 2000;
   }
   logger.error(new HSWSError('Reconnection retries limit exceeded. Connection terminated.', cause));
   return process.exit(1);
