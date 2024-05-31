@@ -71,6 +71,14 @@ export const isValidCacheKey = async (cacheKey: string): Promise<boolean> => {
   }
 };
 
+export const getCacheKeysCount = async (): Promise<number> => {
+  try {
+    return redisClient.sCard(`${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`);
+  } catch (e) {
+    throw new HSWSError('Failed getting cache keys count', e);
+  }
+};
+
 export const initCache = async (
   cacheKey: string,
   authToken: string,

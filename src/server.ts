@@ -8,12 +8,14 @@ import {
   healthMiddleware,
   rateLimitMiddleware,
   smartAppWebhookMiddleware,
+  storeStatsMiddleware,
   versionMiddleware,
   webhookTokenMiddleware,
 } from './middleware';
 
 const PATH_HEALTH = '/healthz';
 const PATH_VERSION = '/version';
+const STATS_VERSION = '/store-stats';
 const PATH_API = '/api';
 const PATH_CLIENTREQUEST = `${PATH_API}/clientrequest`;
 
@@ -28,6 +30,7 @@ const listenCallback = (): void => {
 export const server = express()
   .get(PATH_HEALTH, healthMiddleware)
   .get(PATH_VERSION, versionMiddleware)
+  .get(STATS_VERSION, storeStatsMiddleware)
   .use(express.json())
   .use(compression({ level: 6, threshold: 500 }))
   .post(PATH_API, smartAppWebhookMiddleware)

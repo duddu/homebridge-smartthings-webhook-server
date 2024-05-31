@@ -6,7 +6,7 @@ import {
 } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
 
 import { constants } from './constants';
-import { flushDeviceEvents, isValidCacheKey } from './store';
+import { flushDeviceEvents, getCacheKeysCount, isValidCacheKey } from './store';
 import { logger } from './logger';
 import { smartApp } from './smartapp';
 import { ensureSubscriptions } from './subscriptions';
@@ -25,6 +25,18 @@ type HSWSClientRequestHandler = RequestHandler<
 
 export const healthMiddleware: RequestHandler = (_req, res) => {
   res.sendStatus(200);
+};
+
+export const storeStatsMiddleware: RequestHandler = async (_req, res) => {
+  try {
+    res.status(200).json({
+      installedAppsCount: await getCacheKeysCount(),
+    });
+  } catch (error) {
+    logger.error(error);
+
+    res.sendStatus(500);
+  }
 };
 
 export const versionMiddleware: RequestHandler = (_req, res) => {
