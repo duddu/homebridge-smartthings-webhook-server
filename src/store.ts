@@ -32,6 +32,9 @@ const redisOnErrorCallback = (error: Error) => {
   logger.error(new HSWSError(`Redis error`, error));
 };
 
+const redisOnEventDefaultCallback = (eventName: string) => () =>
+  logger.debug(`Redis client emitted "${eventName}" event`);
+
 let redisClient: ReturnType<typeof createClient>;
 
 try {
@@ -49,6 +52,9 @@ try {
   }).connect();
 
   redisClient.on('error', redisOnErrorCallback);
+  redisClient.on('connect', redisOnEventDefaultCallback('connect'));
+  redisClient.on('ready', redisOnEventDefaultCallback('ready'));
+  redisClient.on('end', redisOnEventDefaultCallback('end'));
 } catch (e) {
   logger.error(new HSWSError(`Redis connection failed`, e));
   process.exit(1);
