@@ -178,39 +178,26 @@ export const flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]>
 
 export const getSubscribedDevicesIds = async (cacheKey: string): Promise<string[]> => {
   try {
-    return redisClient.sMembers(
+    const ids = await redisClient.get(
       `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
     );
+    return typeof ids === 'string' ? ids.split(';') : [];
   } catch (e) {
     throw new HSWSError('Failed retrieving subscribed devices ids', e);
   }
 };
 
-export const addSubscribedDevicesIds = async (
+export const setSubscribedDevicesIds = async (
   cacheKey: string,
-  addedDevicesIds: string | string[],
+  devicesIds: string[],
 ): Promise<void> => {
   try {
-    await redisClient.sAdd(
+    await redisClient.set(
       `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
-      addedDevicesIds,
+      devicesIds.join(';'),
     );
   } catch (e) {
-    throw new HSWSError('Failed adding subscribed devices ids', e);
-  }
-};
-
-export const removeSubscribedDevicesIds = async (
-  cacheKey: string,
-  removedDevicesIds: string | string[],
-): Promise<void> => {
-  try {
-    await redisClient.sRem(
-      `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
-      removedDevicesIds,
-    );
-  } catch (e) {
-    throw new HSWSError('Failed removing subscribed devices ids', e);
+    throw new HSWSError('Failed setting subscribed devices ids', e);
   }
 };
 

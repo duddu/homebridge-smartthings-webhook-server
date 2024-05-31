@@ -6,10 +6,10 @@ import {
 } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
 
 import { constants } from './constants';
-import { flushDeviceEvents, getCacheKeysCount, isValidCacheKey } from './store';
 import { logger } from './logger';
 import { smartApp } from './smartapp';
-import { ensureSubscriptions } from './subscriptions';
+import { flushDeviceEvents, getCacheKeysCount, isValidCacheKey } from './store';
+import { syncDevicesSubscriptions } from './subscriptions';
 
 interface HSWSExpressLocals extends Record<string, unknown> {
   webhookToken: string;
@@ -124,7 +124,7 @@ export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res
   try {
     const { webhookToken } = res.locals;
 
-    await ensureSubscriptions(webhookToken, deviceIds);
+    await syncDevicesSubscriptions(webhookToken, deviceIds);
 
     const events = await flushDeviceEvents(webhookToken);
 

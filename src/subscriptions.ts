@@ -1,140 +1,81 @@
-import {
-  ConfigEntry,
-  ConfigValueType,
-  DeviceSubscriptionDetail,
-  Subscription,
-  SubscriptionSource,
-  SubscriptionsEndpoint,
-} from '@smartthings/core-sdk';
+import { ConfigValueType } from '@smartthings/core-sdk';
+import { SmartAppContext } from '@smartthings/smartapp';
 
 import { HSWSError } from './error';
 import { logger } from './logger';
 import { DEVICE_EVENT_HANDLER_NAME, smartApp } from './smartapp';
-import {
-  getAuthenticationTokens,
-  getSubscribedDevicesIds,
-  addSubscribedDevicesIds,
-  removeSubscribedDevicesIds,
-} from './store';
+import { getAuthenticationTokens, getSubscribedDevicesIds, setSubscribedDevicesIds } from './store';
 
-type HSWSSubscriptionsContext = {
-  installedAppId: string;
-  subscribedDevicesIds: string[];
-  subscriptionsEndpoint: SubscriptionsEndpoint;
-};
-
-interface HSWSDeviceSubscription extends Subscription {
-  id: string;
-  device: DeviceSubscriptionDetail;
-  sourceType: SubscriptionSource.DEVICE;
-}
-
-export const ensureSubscriptions = async (
+export const syncDevicesSubscriptions = async (
   webhookToken: string,
-  registeredDevicesIdsList: string[],
+  clientDevicesIds: string[],
 ): Promise<void> => {
-  const { authToken, refreshToken } = await getAuthenticationTokens(webhookToken);
+  const authTokens = await getAuthenticationTokens(webhookToken);
 
-  const smartAppContext = await smartApp.withContext({
-    installedAppId: webhookToken,
-    authToken,
-    refreshToken,
-  });
+  const {
+    api: {
+      config: { installedAppId },
+      subscriptions,
+    },
+  }: SmartAppContext = await smartApp.withContext({ installedAppId: webhookToken, ...authTokens });
 
-  const subscriptionsContext: HSWSSubscriptionsContext = {
-    installedAppId: webhookToken,
-    subscriptionsEndpoint: smartAppContext.api.subscriptions,
-    subscribedDevicesIds: await getSubscribedDevicesIds(webhookToken),
-  };
+  if (typeof installedAppId !== 'string') {
+    throw new HSWSError('Unable to retrieve installed app id from smart app context');
+  }
 
-  if (typeof subscriptionsContext.subscriptionsEndpoint === 'undefined') {
+  if (typeof subscriptions === 'undefined') {
     throw new HSWSError(
       `The smart app context for the requested app id ${webhookToken} is not available. ` +
         'This app has likely been uninstalled from SmartThings.',
     );
   }
 
-  for (const task of [subscribeToRegisteredDevices, unsubscribeFromRemovedDevices]) {
-    await task(registeredDevicesIdsList, subscriptionsContext);
-  }
-};
+  const subscribedDevicesIds = await getSubscribedDevicesIds(installedAppId);
 
-const subscribeToRegisteredDevices = async (
-  registeredDevicesIds: string[],
-  { installedAppId, subscriptionsEndpoint, subscribedDevicesIds }: HSWSSubscriptionsContext,
-): Promise<void> => {
-  const unsubscribedDevicesIds = registeredDevicesIds.filter(
-    (id) => !subscribedDevicesIds.includes(id),
-  );
-  if (unsubscribedDevicesIds.length === 0) {
+  if (
+    clientDevicesIds
+      .concat(subscribedDevicesIds)
+      .filter((id) => !(clientDevicesIds.includes(id) && subscribedDevicesIds.includes(id)))
+      .length === 0
+  ) {
     return;
   }
-  logger.debug('Received new registered devices to subscribe to', {
+
+  logger.debug('Syncing devices subscriptions with client bridge configuration', {
     installedAppId,
-    clientDevicesCount: registeredDevicesIds.length,
+    clientDevicesCount: clientDevicesIds.length,
     subscribedDevicesCount: subscribedDevicesIds.length,
-    unsubscribedDevicesCount: unsubscribedDevicesIds.length,
   });
+
   try {
-    await subscriptionsEndpoint.subscribeToDevices(
-      getDevicesConfigEntries(unsubscribedDevicesIds),
+    await subscriptions.delete();
+    await subscriptions.subscribeToDevices(
+      subscribedDevicesIds.map((deviceId) => ({
+        valueType: ConfigValueType.DEVICE,
+        deviceConfig: {
+          deviceId,
+          componentId: 'main',
+          permissions: ['r'],
+        },
+      })),
       '*',
       '*',
       DEVICE_EVENT_HANDLER_NAME,
     );
-    await addSubscribedDevicesIds(installedAppId, unsubscribedDevicesIds);
+    await setSubscribedDevicesIds(installedAppId, subscribedDevicesIds);
   } catch (e) {
+    try {
+      await setSubscribedDevicesIds(installedAppId, []);
+      await subscriptions.delete();
+    } catch (_e) {
+      logger.warn('Unable to execute devices subscription failure fallback', { installedAppId });
+    }
+
     throw new HSWSError(
       `Unable to subscribe installed app ${installedAppId} to registered devices events`,
       e,
     );
   }
-  logger.debug('Subscribed to new registered devices events', { installedAppId });
-};
 
-const unsubscribeFromRemovedDevices = async (
-  registeredDevicesIds: string[],
-  { installedAppId, subscriptionsEndpoint, subscribedDevicesIds }: HSWSSubscriptionsContext,
-): Promise<void> => {
-  const removedDevicesIds = subscribedDevicesIds.filter((id) => !registeredDevicesIds.includes(id));
-  if (removedDevicesIds.length === 0) {
-    return;
-  }
-  logger.debug('Received new devices to unsubscribe from', {
-    installedAppId,
-    clientDevicesCount: registeredDevicesIds.length,
-    subscribedDevicesCount: subscribedDevicesIds.length,
-    removedDevicesCount: removedDevicesIds.length,
-  });
-  try {
-    await Promise.all(
-      (await subscriptionsEndpoint.list())
-        .filter(
-          (subscription): subscription is HSWSDeviceSubscription =>
-            typeof subscription.id === 'string' &&
-            typeof subscription.device?.deviceId === 'string',
-        )
-        .filter(({ device }) => removedDevicesIds.includes(device.deviceId))
-        .map(async ({ id, device }) => {
-          await subscriptionsEndpoint.delete(id);
-          await removeSubscribedDevicesIds(installedAppId, device.deviceId);
-        }),
-    );
-  } catch (e) {
-    throw new HSWSError(
-      `Unable to unsubscribe installed app ${installedAppId} from unregistered devices events`,
-      e,
-    );
-  }
-  logger.debug('Unsubscribed from unregistered devices events', { installedAppId });
+  logger.debug('Subscribed to registered devices events', { installedAppId });
 };
-
-const getDevicesConfigEntries = (unsubscribedDevicesIds: string[]): ConfigEntry[] =>
-  unsubscribedDevicesIds.map((deviceId) => ({
-    valueType: ConfigValueType.DEVICE,
-    deviceConfig: {
-      deviceId,
-      componentId: 'main',
-      permissions: ['r'],
-    },
-  }));
