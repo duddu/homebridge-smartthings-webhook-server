@@ -113,21 +113,23 @@ const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEve
 };
 
 class HSWSContextStore implements ContextStore {
-  public get = async (installedAppId: string): Promise<ContextRecord> => ({
-    installedAppId,
-    ...(await store.getAuthenticationTokens(installedAppId)),
-  });
+  public async get(installedAppId: string): Promise<ContextRecord> {
+    return {
+      installedAppId,
+      ...(await store.getAuthenticationTokens(installedAppId)),
+    };
+  }
 
-  public put = async (appContext: ContextRecord): Promise<ContextRecord> => {
+  public async put(appContext: ContextRecord): Promise<ContextRecord> {
     const { installedAppId, authToken, refreshToken } = appContext;
     await store.setAuthenticationTokens(installedAppId, { authToken, refreshToken });
     return appContext;
-  };
+  }
 
-  public update = async (
+  public async update(
     installedAppId: string,
     updatedAppContext: Partial<ContextRecord>,
-  ): Promise<Partial<ContextRecord>> => {
+  ): Promise<Partial<ContextRecord>> {
     const { authToken: updatedAuthToken, refreshToken: updatedRefreshToken } = updatedAppContext;
     if (typeof updatedAuthToken === 'string' || typeof updatedRefreshToken === 'string') {
       const { authToken: currentAuthToken, refreshToken: currentRefreshToken } =
@@ -140,9 +142,11 @@ class HSWSContextStore implements ContextStore {
       }
     }
     return updatedAppContext;
-  };
+  }
 
-  public delete = async (installedAppId: string): Promise<void> => store.clearCache(installedAppId);
+  public async delete(installedAppId: string): Promise<void> {
+    await store.clearCache(installedAppId);
+  }
 }
 
 export const smartApp = new SmartApp()
