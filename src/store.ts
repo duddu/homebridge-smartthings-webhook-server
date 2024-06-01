@@ -228,10 +228,10 @@ class HSWSStore {
 
     this._redisClient
       .then((client) => {
-        client.on('error', this.redisOnErrorCallback);
-        client.on('connect', this.getRedisOnEventDefaultCallback('connect'));
-        client.on('ready', this.getRedisOnEventDefaultCallback('ready'));
-        client.on('end', this.getRedisOnEventDefaultCallback('end'));
+        client.on('error', this.redisErrorCallback);
+        client.on('connect', this.getRedisEventDefaultCallback('connect'));
+        client.on('ready', this.getRedisEventDefaultCallback('ready'));
+        client.on('end', this.getRedisEventDefaultCallback('end'));
       })
       .catch((e) => {
         logger.error(new HSWSError(`Redis connection failed`, e));
@@ -241,7 +241,7 @@ class HSWSStore {
   }
 
   private redisClientReconnectStrategy = (retries: number, cause: Error) => {
-    if (retries <= 10) {
+    if (retries <= 15) {
       logger.warn('Reconnecting', { cause: cause.message });
       return retries * 2000;
     }
@@ -251,12 +251,14 @@ class HSWSStore {
     return false;
   };
 
-  private redisOnErrorCallback = (error: Error) => {
+  private redisErrorCallback = (error: Error) => {
     logger.error(new HSWSError(`Redis error`, error));
   };
 
-  private getRedisOnEventDefaultCallback = (eventName: string) => () =>
-    logger.debug(`Redis client emitted "${eventName}" event`);
+  private getRedisEventDefaultCallback = (eventName: string) =>
+    function redisEventDefaultCallback() {
+      logger.debug(`Received ${eventName} event from redis client`);
+    };
 }
 
 export const store = new HSWSStore();
