@@ -128,6 +128,8 @@ export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res
 
     const events = await store.flushDeviceEvents(webhookToken);
 
+    logger.silly('Sending response', { events, headers: res.getHeaders() });
+
     res.status(200).json({ timeout: false, events });
   } catch (error) {
     logger.error(error);
