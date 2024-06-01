@@ -12,6 +12,7 @@ import {
   versionMiddleware,
   webhookTokenMiddleware,
 } from './middleware';
+import { store } from './store';
 
 const enum HSWSPaths {
   PATH_HEALTH = '/healthz',
@@ -21,11 +22,12 @@ const enum HSWSPaths {
   PATH_CLIENTREQUEST = `${PATH_API}/clientrequest`,
 }
 
-const listenCallback = (): void => {
+const listenCallback = async (): Promise<void> => {
   logger.info(`Server listening on port ${constants.HSWS_PORT}`, {
     logLevel: constants.HSWS_LOG_LEVEL,
     version: constants.HSWS_VERSION,
     revision: constants.HSWS_REVISION,
+    redisReady: await store.isRedisClientReady(),
   });
 };
 

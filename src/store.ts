@@ -198,6 +198,14 @@ class HSWSStore {
     }
   };
 
+  public isRedisClientReady = async (): Promise<boolean> => {
+    try {
+      return (await this.redisClient).isReady;
+    } catch (e) {
+      return false;
+    }
+  };
+
   private _redisClient: Promise<ReturnType<typeof createClient>> | undefined;
 
   private get redisClient(): Promise<ReturnType<typeof createClient>> {
