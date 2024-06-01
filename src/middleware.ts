@@ -115,7 +115,7 @@ export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res
   });
 
   const reqKeepAlive = req.get('Keep-Alive');
-  logger.silly('reqKeepAlive', { reqKeepAlive });
+  logger.silly('reqKeepAlive', { reqKeepAlive, headers: req.headers });
 
   if (typeof reqKeepAlive === 'string' && reqKeepAlive.trim() !== '') {
     res.setHeader('Connection', 'keep-alive');
