@@ -20,7 +20,7 @@ const enum DatabaseKeys {
 const DEVICE_EVENTS_TTL_SEC = 604800;
 
 class HSWSStore {
-  public async isValidCacheKey(cacheKey: string): Promise<boolean> {
+  public isValidCacheKey = async (cacheKey: string): Promise<boolean> => {
     try {
       return (await this.redisClient).sIsMember(
         `${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`,
@@ -29,9 +29,9 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError('Failed cache key validation', e);
     }
-  }
+  };
 
-  public async getCacheKeysCount(): Promise<number> {
+  public getCacheKeysCount = async (): Promise<number> => {
     try {
       return (await this.redisClient).sCard(
         `${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`,
@@ -39,9 +39,13 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError('Failed getting cache keys count', e);
     }
-  }
+  };
 
-  public async initCache(cacheKey: string, authToken: string, refreshToken: string): Promise<void> {
+  public initCache = async (
+    cacheKey: string,
+    authToken: string,
+    refreshToken: string,
+  ): Promise<void> => {
     try {
       await Promise.all([
         (await this.redisClient).sAdd(
@@ -53,9 +57,9 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError('Failed cache initialization', e);
     }
-  }
+  };
 
-  public async clearCache(cacheKey: string): Promise<void> {
+  public clearCache = async (cacheKey: string): Promise<void> => {
     try {
       const deviceEventsKeys: Set<string> = new Set();
       const client = await this.redisClient;
@@ -76,9 +80,13 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError(`Failed clearing cache for key ${cacheKey}`, e);
     }
-  }
+  };
 
-  public async addDeviceEvent(cacheKey: string, eventId: string, event: ShortEvent): Promise<void> {
+  public addDeviceEvent = async (
+    cacheKey: string,
+    eventId: string,
+    event: ShortEvent,
+  ): Promise<void> => {
     try {
       const cacheKeyKey = `${DatabaseKeys.PREFIX}:${cacheKey}`;
       const eventsIdsKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`;
@@ -93,9 +101,9 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError('Failed adding new device event', e);
     }
-  }
+  };
 
-  public async flushDeviceEvents(cacheKey: string): Promise<ShortEvent[]> {
+  public flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]> => {
     try {
       const cacheKeyKey = `${DatabaseKeys.PREFIX}:${cacheKey}`;
       const eventsIdsKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`;
@@ -134,9 +142,9 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError('Failed flushing device events', e);
     }
-  }
+  };
 
-  public async getSubscribedDevicesIds(cacheKey: string): Promise<string[]> {
+  public getSubscribedDevicesIds = async (cacheKey: string): Promise<string[]> => {
     try {
       const ids = await (
         await this.redisClient
@@ -145,9 +153,12 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError('Failed retrieving subscribed devices ids', e);
     }
-  }
+  };
 
-  public async setSubscribedDevicesIds(cacheKey: string, devicesIds: string[]): Promise<void> {
+  public setSubscribedDevicesIds = async (
+    cacheKey: string,
+    devicesIds: string[],
+  ): Promise<void> => {
     try {
       await (
         await this.redisClient
@@ -158,9 +169,9 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError('Failed setting subscribed devices ids', e);
     }
-  }
+  };
 
-  public async getAuthenticationTokens(cacheKey: string): Promise<HSWSStoreAuthTokens> {
+  public getAuthenticationTokens = async (cacheKey: string): Promise<HSWSStoreAuthTokens> => {
     try {
       const { authToken, refreshToken } = await (
         await this.redisClient
@@ -169,12 +180,12 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError('Failed retrieving authentication tokens', e);
     }
-  }
+  };
 
-  public async setAuthenticationTokens(
+  public setAuthenticationTokens = async (
     cacheKey: string,
     authTokens: HSWSStoreAuthTokens,
-  ): Promise<void> {
+  ): Promise<void> => {
     try {
       await (
         await this.redisClient
@@ -185,15 +196,15 @@ class HSWSStore {
     } catch (e) {
       throw new HSWSError('Failed setting authentication tokens', e);
     }
-  }
+  };
 
-  public async isRedisClientReady(): Promise<boolean> {
+  public isRedisClientReady = async (): Promise<boolean> => {
     try {
       return (await this.redisClient).isReady;
     } catch (e) {
       return false;
     }
-  }
+  };
 
   private _redisClient: Promise<ReturnType<typeof createClient>> | undefined;
 
@@ -202,25 +213,33 @@ class HSWSStore {
       return this._redisClient;
     }
 
-    this._redisClient = createClient({
-      socket: {
-        host: constants.HSWS_REDIS_HOST,
-        port: +constants.HSWS_REDIS_PORT,
-        tls: constants.HSWS_REDIS_TLS_ENABLED === 'true',
-        connectTimeout: 10000,
-        reconnectStrategy: this.redisClientReconnectStrategy,
-      },
-      username: 'default',
-      password: constants.HSWS_REDIS_PASSWORD,
-      database: +(constants.HSWS_REDIS_DATABASE_NUMBER ?? 0),
-    }).connect();
+    let clientOptions;
+    try {
+      clientOptions = {
+        socket: {
+          host: constants.HSWS_REDIS_HOST,
+          port: +constants.HSWS_REDIS_PORT,
+          tls: constants.HSWS_REDIS_TLS_ENABLED === 'true',
+          connectTimeout: 10000,
+          reconnectStrategy: this.redisClientReconnectStrategy.bind(this),
+        },
+        username: 'default',
+        password: constants.HSWS_REDIS_PASSWORD,
+        database: +(constants.HSWS_REDIS_DATABASE_NUMBER ?? 0),
+      };
+    } catch (e) {
+      this._redisClient = Promise.reject(e);
+      return this._redisClient;
+    }
+
+    this._redisClient = createClient(clientOptions).connect();
 
     this._redisClient
       .then((client) => {
-        client.on('error', this.redisErrorCallback);
-        client.on('connect', this.getRedisEventDefaultCallback('connect'));
-        client.on('ready', this.getRedisEventDefaultCallback('ready'));
-        client.on('end', this.getRedisEventDefaultCallback('end'));
+        client.on('error', this.redisErrorCallback.bind(this));
+        client.on('connect', this.getRedisDefaultEventCallback('connect').bind(this));
+        client.on('ready', this.getRedisDefaultEventCallback('ready').bind(this));
+        client.on('end', this.getRedisDefaultEventCallback('end').bind(this));
       })
       .catch((e) => {
         logger.error(new HSWSError(`Redis connection failed`, e));
@@ -229,7 +248,7 @@ class HSWSStore {
     return this._redisClient;
   }
 
-  private redisClientReconnectStrategy(retries: number, cause: Error) {
+  private redisClientReconnectStrategy = (retries: number, cause: Error): number | false => {
     if (retries <= 15) {
       logger.warn('Reconnecting', { cause: cause.message });
       return retries * 2000;
@@ -238,17 +257,16 @@ class HSWSStore {
       new HSWSError('Reconnection retries limit exceeded. Connection terminated.', cause),
     );
     return false;
-  }
+  };
 
-  private redisErrorCallback(error: Error) {
+  private redisErrorCallback = (error: Error): void => {
     logger.error(new HSWSError(`Redis error`, error));
-  }
+  };
 
-  private getRedisEventDefaultCallback(eventName: string): () => void {
-    return function redisEventDefaultCallback() {
+  private getRedisDefaultEventCallback = (eventName: string): (() => void) =>
+    function redisDefaultEventCallback(): void {
       logger.debug(`Received ${eventName} event from redis client`);
     };
-  }
 }
 
 export const store = new HSWSStore();
