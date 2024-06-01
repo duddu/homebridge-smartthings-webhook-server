@@ -1,4 +1,4 @@
-import { ConfigValueType } from '@smartthings/core-sdk';
+import { ConfigEntry, ConfigValueType } from '@smartthings/core-sdk';
 import { SmartAppContext } from '@smartthings/smartapp';
 
 import { HSWSError } from './error';
@@ -32,12 +32,7 @@ export const syncDevicesSubscriptions = async (
 
   const subscribedDevicesIds = await getSubscribedDevicesIds(installedAppId);
 
-  if (
-    clientDevicesIds
-      .concat(subscribedDevicesIds)
-      .filter((id) => !(clientDevicesIds.includes(id) && subscribedDevicesIds.includes(id)))
-      .length === 0
-  ) {
+  if (haveListsSameItems(clientDevicesIds, subscribedDevicesIds)) {
     return;
   }
 
@@ -49,20 +44,15 @@ export const syncDevicesSubscriptions = async (
 
   try {
     await subscriptions.delete();
-    await subscriptions.subscribeToDevices(
-      subscribedDevicesIds.map((deviceId) => ({
-        valueType: ConfigValueType.DEVICE,
-        deviceConfig: {
-          deviceId,
-          componentId: 'main',
-          permissions: ['r'],
-        },
-      })),
-      '*',
-      '*',
-      DEVICE_EVENT_HANDLER_NAME,
-    );
-    await setSubscribedDevicesIds(installedAppId, subscribedDevicesIds);
+    if (clientDevicesIds.length > 0) {
+      await subscriptions.subscribeToDevices(
+        getDevicesConfigEntries(clientDevicesIds),
+        '*',
+        '*',
+        DEVICE_EVENT_HANDLER_NAME,
+      );
+    }
+    await setSubscribedDevicesIds(installedAppId, clientDevicesIds);
   } catch (e) {
     try {
       await setSubscribedDevicesIds(installedAppId, []);
@@ -79,3 +69,17 @@ export const syncDevicesSubscriptions = async (
 
   logger.debug('Subscribed to registered devices events', { installedAppId });
 };
+
+const haveListsSameItems = (list1: string[], list2: string[]): boolean =>
+  list1.concat(list2).filter((item) => !(list1.includes(item) && list2.includes(item))).length ===
+  0;
+
+const getDevicesConfigEntries = (devicesIds: string[]): ConfigEntry[] =>
+  devicesIds.map((deviceId) => ({
+    valueType: ConfigValueType.DEVICE,
+    deviceConfig: {
+      deviceId,
+      componentId: 'main',
+      permissions: ['r'],
+    },
+  }));

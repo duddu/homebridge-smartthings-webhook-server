@@ -181,7 +181,7 @@ export const getSubscribedDevicesIds = async (cacheKey: string): Promise<string[
     const ids = await redisClient.get(
       `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
     );
-    return typeof ids === 'string' ? ids.split(';') : [];
+    return typeof ids === 'string' && ids.trim() !== '' ? ids.split(';') : [];
   } catch (e) {
     throw new HSWSError('Failed retrieving subscribed devices ids', e);
   }
