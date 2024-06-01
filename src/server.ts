@@ -13,11 +13,13 @@ import {
   webhookTokenMiddleware,
 } from './middleware';
 
-const PATH_HEALTH = '/healthz';
-const PATH_VERSION = '/version';
-const STATS_VERSION = '/store-stats';
-const PATH_API = '/api';
-const PATH_CLIENTREQUEST = `${PATH_API}/clientrequest`;
+const enum HSWSPaths {
+  PATH_HEALTH = '/healthz',
+  PATH_VERSION = '/version',
+  STATS_VERSION = '/store-stats',
+  PATH_API = '/api',
+  PATH_CLIENTREQUEST = `${PATH_API}/clientrequest`,
+}
 
 const listenCallback = (): void => {
   logger.info(`Server listening on port ${constants.HSWS_PORT}`, {
@@ -28,13 +30,18 @@ const listenCallback = (): void => {
 };
 
 export const server = express()
-  .get(PATH_HEALTH, healthMiddleware)
-  .get(PATH_VERSION, versionMiddleware)
-  .get(STATS_VERSION, storeStatsMiddleware)
+  .get(HSWSPaths.PATH_HEALTH, healthMiddleware)
+  .get(HSWSPaths.PATH_VERSION, versionMiddleware)
+  .get(HSWSPaths.STATS_VERSION, storeStatsMiddleware)
   .use(express.json())
   .use(compression({ level: 6, threshold: 500 }))
-  .post(PATH_API, smartAppWebhookMiddleware)
-  .post(PATH_CLIENTREQUEST, webhookTokenMiddleware, rateLimitMiddleware, clientRequestMiddleware)
+  .post(HSWSPaths.PATH_API, smartAppWebhookMiddleware)
+  .post(
+    HSWSPaths.PATH_CLIENTREQUEST,
+    webhookTokenMiddleware,
+    rateLimitMiddleware,
+    clientRequestMiddleware,
+  )
   .disable('x-powered-by')
   .listen(constants.HSWS_PORT, listenCallback);
 
