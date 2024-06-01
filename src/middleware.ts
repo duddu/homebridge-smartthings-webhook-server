@@ -8,7 +8,7 @@ import {
 import { constants } from './constants';
 import { logger } from './logger';
 import { smartApp } from './smartapp';
-import { flushDeviceEvents, getCacheKeysCount, isValidCacheKey } from './store';
+import { store } from './store';
 import { syncDevicesSubscriptions } from './subscriptions';
 
 interface HSWSExpressLocals extends Record<string, unknown> {
@@ -30,7 +30,7 @@ export const healthMiddleware: RequestHandler = (_req, res) => {
 export const storeStatsMiddleware: RequestHandler = async (_req, res) => {
   try {
     res.status(200).json({
-      installedAppsCount: await getCacheKeysCount(),
+      installedAppsCount: await store.getCacheKeysCount(),
     });
   } catch (error) {
     logger.error(error);
@@ -61,7 +61,7 @@ export const webhookTokenMiddleware: HSWSClientRequestHandler = async (req, res,
   }
 
   try {
-    if (!(await isValidCacheKey(bearer))) {
+    if (!(await store.isValidCacheKey(bearer))) {
       logger.error('The webhook token provided does not match any installed application id');
       res.sendStatus(403);
       return;
@@ -126,7 +126,7 @@ export const clientRequestMiddleware: HSWSClientRequestHandler = async (req, res
 
     await syncDevicesSubscriptions(webhookToken, deviceIds);
 
-    const events = await flushDeviceEvents(webhookToken);
+    const events = await store.flushDeviceEvents(webhookToken);
 
     res.status(200).json({ timeout: false, events });
   } catch (error) {

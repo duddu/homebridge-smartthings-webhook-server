@@ -1,11 +1,11 @@
 import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
 import { ShortEvent } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
-import { addDeviceEvent } from './store';
+import { store } from './store';
 
 export const storeDeviceEvent = async (
   webhookToken: string,
   event: AppEvent.DeviceEvent,
-): Promise<void> => addDeviceEvent(webhookToken, event.eventId, shortenDeviceEvent(event));
+): Promise<void> => store.addDeviceEvent(webhookToken, event.eventId, shortenDeviceEvent(event));
 
 const shortenDeviceEvent = ({
   deviceId,

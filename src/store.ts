@@ -2,11 +2,11 @@ import { AppEvent } from '@smartthings/smartapp/lib/lifecycle-events';
 import { ShortEvent } from 'homebridge-smartthings-ik/dist/webhook/subscriptionHandler';
 import { createClient } from 'redis';
 
+import { constants } from './constants';
 import { HSWSError } from './error';
 import { logger } from './logger';
-import { constants } from './constants';
 
-export type HSWSStoreAuthTokens = Omit<AppEvent.InstallData, 'installedApp'>;
+type HSWSStoreAuthTokens = Omit<AppEvent.InstallData, 'installedApp'>;
 
 const enum DatabaseKeys {
   PREFIX = 'HSWS',
@@ -19,209 +19,236 @@ const enum DatabaseKeys {
 
 const DEVICE_EVENTS_TTL_SEC = 604800;
 
-const redisClientReconnectStrategy = (retries: number, cause: Error) => {
-  if (retries <= 10) {
-    logger.warn('Reconnecting', { cause: cause.message });
-    return retries * 2000;
+class HSWSStore {
+  public isValidCacheKey = async (cacheKey: string): Promise<boolean> => {
+    try {
+      return (await this.redisClient).sIsMember(
+        `${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`,
+        cacheKey,
+      );
+    } catch (e) {
+      throw new HSWSError('Failed cache key validation', e);
+    }
+  };
+
+  public getCacheKeysCount = async (): Promise<number> => {
+    try {
+      return (await this.redisClient).sCard(
+        `${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`,
+      );
+    } catch (e) {
+      throw new HSWSError('Failed getting cache keys count', e);
+    }
+  };
+
+  public initCache = async (
+    cacheKey: string,
+    authToken: string,
+    refreshToken: string,
+  ): Promise<void> => {
+    try {
+      await Promise.all([
+        (await this.redisClient).sAdd(
+          `${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`,
+          cacheKey,
+        ),
+        this.setAuthenticationTokens(cacheKey, { authToken, refreshToken }),
+      ]);
+    } catch (e) {
+      throw new HSWSError('Failed cache initialization', e);
+    }
+  };
+
+  public clearCache = async (cacheKey: string): Promise<void> => {
+    try {
+      const deviceEventsKeys: Set<string> = new Set();
+      const client = await this.redisClient;
+      for await (const deviceEventKey of client.scanIterator({
+        MATCH: `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:*`,
+      })) {
+        deviceEventsKeys.add(deviceEventKey);
+      }
+      await Promise.all([
+        client.sRem(`${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`, cacheKey),
+        client.unlink([
+          `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`,
+          `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
+          `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.AUTHENTICATION_TOKENS}`,
+          ...deviceEventsKeys,
+        ]),
+      ]);
+    } catch (e) {
+      throw new HSWSError(`Failed clearing cache for key ${cacheKey}`, e);
+    }
+  };
+
+  public addDeviceEvent = async (
+    cacheKey: string,
+    eventId: string,
+    event: ShortEvent,
+  ): Promise<void> => {
+    try {
+      const cacheKeyKey = `${DatabaseKeys.PREFIX}:${cacheKey}`;
+      const eventsIdsKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`;
+      const eventHashKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:${eventId}`;
+      const client = await this.redisClient;
+      await Promise.all([
+        client.hSet(eventHashKey, { ...event }),
+        client.expire(eventHashKey, DEVICE_EVENTS_TTL_SEC),
+        client.sAdd(eventsIdsKey, eventId),
+        client.expire(eventsIdsKey, DEVICE_EVENTS_TTL_SEC),
+      ]);
+    } catch (e) {
+      throw new HSWSError('Failed adding new device event', e);
+    }
+  };
+
+  public flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]> => {
+    try {
+      const cacheKeyKey = `${DatabaseKeys.PREFIX}:${cacheKey}`;
+      const eventsIdsKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`;
+      const eventsQueueKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}`;
+      const client = await this.redisClient;
+      if ((await client.sCard(eventsIdsKey)) === 0) {
+        return [];
+      }
+      const eventsIds: Set<string> = new Set();
+      for await (const eventId of client.sScanIterator(eventsIdsKey)) {
+        if (typeof eventId === 'string') {
+          eventsIds.add(eventId);
+        }
+      }
+      if (eventsIds.size === 0) {
+        return [];
+      }
+      return Promise.all(
+        Array.from(eventsIds)
+          .filter(async (eventId): Promise<boolean> => {
+            if ((await client.exists(`${eventsQueueKey}:${eventId}`)) > 0) {
+              return true;
+            }
+            await client.sRem(eventsIdsKey, eventId);
+            return false;
+          })
+          .map(async (eventId): Promise<ShortEvent> => {
+            const [event] = await Promise.all([
+              client.hGetAll(`${eventsQueueKey}:${eventId}`) as unknown as Promise<ShortEvent>,
+              client.unlink(`${eventsQueueKey}:${eventId}`),
+              client.sRem(eventsIdsKey, eventId),
+            ]);
+            return event;
+          }),
+      );
+    } catch (e) {
+      throw new HSWSError('Failed flushing device events', e);
+    }
+  };
+
+  public getSubscribedDevicesIds = async (cacheKey: string): Promise<string[]> => {
+    try {
+      const ids = await (
+        await this.redisClient
+      ).get(`${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`);
+      return typeof ids === 'string' && ids.trim() !== '' ? ids.split(';') : [];
+    } catch (e) {
+      throw new HSWSError('Failed retrieving subscribed devices ids', e);
+    }
+  };
+
+  public setSubscribedDevicesIds = async (
+    cacheKey: string,
+    devicesIds: string[],
+  ): Promise<void> => {
+    try {
+      await (
+        await this.redisClient
+      ).set(
+        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
+        devicesIds.join(';'),
+      );
+    } catch (e) {
+      throw new HSWSError('Failed setting subscribed devices ids', e);
+    }
+  };
+
+  public getAuthenticationTokens = async (cacheKey: string): Promise<HSWSStoreAuthTokens> => {
+    try {
+      const { authToken, refreshToken } = await (
+        await this.redisClient
+      ).hGetAll(`${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.AUTHENTICATION_TOKENS}`);
+      return { authToken, refreshToken };
+    } catch (e) {
+      throw new HSWSError('Failed retrieving authentication tokens', e);
+    }
+  };
+
+  public setAuthenticationTokens = async (
+    cacheKey: string,
+    authTokens: HSWSStoreAuthTokens,
+  ): Promise<void> => {
+    try {
+      await (
+        await this.redisClient
+      ).hSet(
+        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.AUTHENTICATION_TOKENS}`,
+        authTokens,
+      );
+    } catch (e) {
+      throw new HSWSError('Failed setting authentication tokens', e);
+    }
+  };
+
+  private _redisClient: Promise<ReturnType<typeof createClient>> | undefined;
+
+  private get redisClient(): Promise<ReturnType<typeof createClient>> {
+    if (typeof this._redisClient !== 'undefined') {
+      return this._redisClient;
+    }
+
+    this._redisClient = createClient({
+      socket: {
+        host: constants.HSWS_REDIS_HOST,
+        port: +constants.HSWS_REDIS_PORT,
+        tls: constants.HSWS_REDIS_TLS_ENABLED === 'true',
+        connectTimeout: 10000,
+        reconnectStrategy: this.redisClientReconnectStrategy,
+      },
+      username: 'default',
+      password: constants.HSWS_REDIS_PASSWORD,
+      database: +(constants.HSWS_REDIS_DATABASE_NUMBER ?? 0),
+    }).connect();
+
+    this._redisClient
+      .then((client) => {
+        client.on('error', this.redisOnErrorCallback);
+        client.on('connect', this.getRedisOnEventDefaultCallback('connect'));
+        client.on('ready', this.getRedisOnEventDefaultCallback('ready'));
+        client.on('end', this.getRedisOnEventDefaultCallback('end'));
+      })
+      .catch((e) => {
+        logger.error(new HSWSError(`Redis connection failed`, e));
+      });
+
+    return this._redisClient;
   }
-  logger.error(new HSWSError('Reconnection retries limit exceeded. Connection terminated.', cause));
-  return process.exit(1);
-};
 
-const redisOnErrorCallback = (error: Error) => {
-  logger.error(new HSWSError(`Redis error`, error));
-};
+  private redisClientReconnectStrategy = (retries: number, cause: Error) => {
+    if (retries <= 10) {
+      logger.warn('Reconnecting', { cause: cause.message });
+      return retries * 2000;
+    }
+    logger.error(
+      new HSWSError('Reconnection retries limit exceeded. Connection terminated.', cause),
+    );
+    return false;
+  };
 
-const redisOnEventDefaultCallback = (eventName: string) => () =>
-  logger.debug(`Redis client emitted "${eventName}" event`);
+  private redisOnErrorCallback = (error: Error) => {
+    logger.error(new HSWSError(`Redis error`, error));
+  };
 
-let redisClient: ReturnType<typeof createClient>;
-
-try {
-  redisClient = await createClient({
-    socket: {
-      host: constants.HSWS_REDIS_HOST,
-      port: +constants.HSWS_REDIS_PORT,
-      tls: constants.HSWS_REDIS_TLS_ENABLED === 'true',
-      connectTimeout: 10000,
-      reconnectStrategy: redisClientReconnectStrategy,
-    },
-    username: 'default',
-    password: constants.HSWS_REDIS_PASSWORD,
-    database: +(constants.HSWS_REDIS_DATABASE_NUMBER ?? 0),
-  }).connect();
-
-  redisClient.on('error', redisOnErrorCallback);
-  redisClient.on('connect', redisOnEventDefaultCallback('connect'));
-  redisClient.on('ready', redisOnEventDefaultCallback('ready'));
-  redisClient.on('end', redisOnEventDefaultCallback('end'));
-} catch (e) {
-  logger.error(new HSWSError(`Redis connection failed`, e));
-  process.exit(1);
+  private getRedisOnEventDefaultCallback = (eventName: string) => () =>
+    logger.debug(`Redis client emitted "${eventName}" event`);
 }
 
-export const isValidCacheKey = async (cacheKey: string): Promise<boolean> => {
-  try {
-    return redisClient.sIsMember(
-      `${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`,
-      cacheKey,
-    );
-  } catch (e) {
-    throw new HSWSError('Failed cache key validation', e);
-  }
-};
-
-export const getCacheKeysCount = async (): Promise<number> => {
-  try {
-    return redisClient.sCard(`${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`);
-  } catch (e) {
-    throw new HSWSError('Failed getting cache keys count', e);
-  }
-};
-
-export const initCache = async (
-  cacheKey: string,
-  authToken: string,
-  refreshToken: string,
-): Promise<void> => {
-  try {
-    await Promise.all([
-      redisClient.sAdd(`${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`, cacheKey),
-      setAuthenticationTokens(cacheKey, { authToken, refreshToken }),
-    ]);
-  } catch (e) {
-    throw new HSWSError('Failed cache initialization', e);
-  }
-};
-
-export const clearCache = async (cacheKey: string): Promise<void> => {
-  try {
-    const deviceEventsKeys: Set<string> = new Set();
-    for await (const deviceEventKey of redisClient.scanIterator({
-      MATCH: `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:*`,
-    })) {
-      deviceEventsKeys.add(deviceEventKey);
-    }
-    await Promise.all([
-      redisClient.sRem(`${DatabaseKeys.PREFIX}:${DatabaseKeys.INSTALLED_APPS_IDS}`, cacheKey),
-      redisClient.unlink([
-        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`,
-        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
-        `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.AUTHENTICATION_TOKENS}`,
-        ...deviceEventsKeys,
-      ]),
-    ]);
-  } catch (e) {
-    throw new HSWSError('Failed clearing cache', e);
-  }
-};
-
-export const addDeviceEvent = async (
-  cacheKey: string,
-  eventId: string,
-  event: ShortEvent,
-): Promise<void> => {
-  try {
-    const cacheKeyKey = `${DatabaseKeys.PREFIX}:${cacheKey}`;
-    const eventsIdsKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`;
-    const eventHashKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}:${eventId}`;
-    await Promise.all([
-      redisClient.hSet(eventHashKey, { ...event }),
-      redisClient.expire(eventHashKey, DEVICE_EVENTS_TTL_SEC),
-      redisClient.sAdd(eventsIdsKey, eventId),
-      redisClient.expire(eventsIdsKey, DEVICE_EVENTS_TTL_SEC),
-    ]);
-  } catch (e) {
-    throw new HSWSError('Failed adding new device event', e);
-  }
-};
-
-export const flushDeviceEvents = async (cacheKey: string): Promise<ShortEvent[]> => {
-  try {
-    const cacheKeyKey = `${DatabaseKeys.PREFIX}:${cacheKey}`;
-    const eventsIdsKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_IDS}`;
-    const eventsQueueKey = `${cacheKeyKey}:${DatabaseKeys.DEVICE_EVENTS_QUEUE}`;
-    if ((await redisClient.sCard(eventsIdsKey)) === 0) {
-      return [];
-    }
-    const eventsIds: Set<string> = new Set();
-    for await (const eventId of redisClient.sScanIterator(eventsIdsKey)) {
-      if (typeof eventId === 'string') {
-        eventsIds.add(eventId);
-      }
-    }
-    if (eventsIds.size === 0) {
-      return [];
-    }
-    return Promise.all(
-      Array.from(eventsIds)
-        .filter(async (eventId): Promise<boolean> => {
-          if ((await redisClient.exists(`${eventsQueueKey}:${eventId}`)) > 0) {
-            return true;
-          }
-          await redisClient.sRem(eventsIdsKey, eventId);
-          return false;
-        })
-        .map(async (eventId): Promise<ShortEvent> => {
-          const [event] = await Promise.all([
-            redisClient.hGetAll(`${eventsQueueKey}:${eventId}`) as unknown as Promise<ShortEvent>,
-            redisClient.unlink(`${eventsQueueKey}:${eventId}`),
-            redisClient.sRem(eventsIdsKey, eventId),
-          ]);
-          return event;
-        }),
-    );
-  } catch (e) {
-    throw new HSWSError('Failed flushing device events', e);
-  }
-};
-
-export const getSubscribedDevicesIds = async (cacheKey: string): Promise<string[]> => {
-  try {
-    const ids = await redisClient.get(
-      `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
-    );
-    return typeof ids === 'string' && ids.trim() !== '' ? ids.split(';') : [];
-  } catch (e) {
-    throw new HSWSError('Failed retrieving subscribed devices ids', e);
-  }
-};
-
-export const setSubscribedDevicesIds = async (
-  cacheKey: string,
-  devicesIds: string[],
-): Promise<void> => {
-  try {
-    await redisClient.set(
-      `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.SUBSCRIBED_DEVICES_IDS}`,
-      devicesIds.join(';'),
-    );
-  } catch (e) {
-    throw new HSWSError('Failed setting subscribed devices ids', e);
-  }
-};
-
-export const getAuthenticationTokens = async (cacheKey: string): Promise<HSWSStoreAuthTokens> => {
-  try {
-    const { authToken, refreshToken } = await redisClient.hGetAll(
-      `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.AUTHENTICATION_TOKENS}`,
-    );
-    return { authToken, refreshToken };
-  } catch (e) {
-    throw new HSWSError('Failed retrieving authentication tokens', e);
-  }
-};
-
-export const setAuthenticationTokens = async (
-  cacheKey: string,
-  authTokens: HSWSStoreAuthTokens,
-): Promise<void> => {
-  try {
-    redisClient.hSet(
-      `${DatabaseKeys.PREFIX}:${cacheKey}:${DatabaseKeys.AUTHENTICATION_TOKENS}`,
-      authTokens,
-    );
-  } catch (e) {
-    throw new HSWSError('Failed setting authentication tokens', e);
-  }
-};
+export const store = new HSWSStore();

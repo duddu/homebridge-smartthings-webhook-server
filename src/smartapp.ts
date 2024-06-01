@@ -13,7 +13,7 @@ import { constants } from './constants';
 import { HSWSError } from './error';
 import { storeDeviceEvent } from './events';
 import { logger, smartAppLogger } from './logger';
-import { clearCache, getAuthenticationTokens, initCache, setAuthenticationTokens } from './store';
+import { store } from './store';
 
 export const DEVICE_EVENT_HANDLER_NAME = 'HSWSDeviceEventHandler';
 const WEBHOOK_TOKEN_CONFIG_NAME = 'Webhook Token';
@@ -85,7 +85,7 @@ const appInstalledCallback = async (
 
   await api.subscriptions.delete();
 
-  await initCache(installedAppId, authToken, refreshToken);
+  await store.initCache(installedAppId, authToken, refreshToken);
 };
 
 const appUninstalledCallback = async (
@@ -96,7 +96,7 @@ const appUninstalledCallback = async (
 
   logger.debug('SmartApp uninstalled', { installedAppId });
 
-  await clearCache(installedAppId);
+  await store.clearCache(installedAppId);
 };
 
 const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEvent): void => {
@@ -115,12 +115,12 @@ const deviceEventCallback = ({ api }: SmartAppContext, event: AppEvent.DeviceEve
 class HSWSContextStore implements ContextStore {
   public get = async (installedAppId: string): Promise<ContextRecord> => ({
     installedAppId,
-    ...(await getAuthenticationTokens(installedAppId)),
+    ...(await store.getAuthenticationTokens(installedAppId)),
   });
 
   public put = async (appContext: ContextRecord): Promise<ContextRecord> => {
     const { installedAppId, authToken, refreshToken } = appContext;
-    await setAuthenticationTokens(installedAppId, { authToken, refreshToken });
+    await store.setAuthenticationTokens(installedAppId, { authToken, refreshToken });
     return appContext;
   };
 
@@ -131,9 +131,9 @@ class HSWSContextStore implements ContextStore {
     const { authToken: updatedAuthToken, refreshToken: updatedRefreshToken } = updatedAppContext;
     if (typeof updatedAuthToken === 'string' || typeof updatedRefreshToken === 'string') {
       const { authToken: currentAuthToken, refreshToken: currentRefreshToken } =
-        await getAuthenticationTokens(installedAppId);
+        await store.getAuthenticationTokens(installedAppId);
       if (updatedAuthToken !== currentAuthToken || updatedRefreshToken !== currentRefreshToken) {
-        await setAuthenticationTokens(installedAppId, {
+        await store.setAuthenticationTokens(installedAppId, {
           authToken: updatedAuthToken ?? currentAuthToken,
           refreshToken: updatedRefreshToken ?? currentRefreshToken,
         });
@@ -142,7 +142,7 @@ class HSWSContextStore implements ContextStore {
     return updatedAppContext;
   };
 
-  public delete = async (installedAppId: string): Promise<void> => clearCache(installedAppId);
+  public delete = async (installedAppId: string): Promise<void> => store.clearCache(installedAppId);
 }
 
 export const smartApp = new SmartApp()

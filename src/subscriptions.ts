@@ -4,13 +4,13 @@ import { SmartAppContext } from '@smartthings/smartapp';
 import { HSWSError } from './error';
 import { logger } from './logger';
 import { DEVICE_EVENT_HANDLER_NAME, smartApp } from './smartapp';
-import { getAuthenticationTokens, getSubscribedDevicesIds, setSubscribedDevicesIds } from './store';
+import { store } from './store';
 
 export const syncDevicesSubscriptions = async (
   webhookToken: string,
   clientDevicesIds: string[],
 ): Promise<void> => {
-  const authTokens = await getAuthenticationTokens(webhookToken);
+  const authTokens = await store.getAuthenticationTokens(webhookToken);
 
   const {
     api: {
@@ -30,7 +30,7 @@ export const syncDevicesSubscriptions = async (
     );
   }
 
-  const subscribedDevicesIds = await getSubscribedDevicesIds(installedAppId);
+  const subscribedDevicesIds = await store.getSubscribedDevicesIds(installedAppId);
 
   if (haveListsSameItems(clientDevicesIds, subscribedDevicesIds)) {
     return;
@@ -52,10 +52,10 @@ export const syncDevicesSubscriptions = async (
         DEVICE_EVENT_HANDLER_NAME,
       );
     }
-    await setSubscribedDevicesIds(installedAppId, clientDevicesIds);
+    await store.setSubscribedDevicesIds(installedAppId, clientDevicesIds);
   } catch (e) {
     try {
-      await setSubscribedDevicesIds(installedAppId, []);
+      await store.setSubscribedDevicesIds(installedAppId, []);
       await subscriptions.delete();
     } catch (_e) {
       logger.warn('Unable to execute devices subscription failure fallback', { installedAppId });
