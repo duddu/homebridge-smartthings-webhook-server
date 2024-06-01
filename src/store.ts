@@ -254,18 +254,18 @@ class HSWSStore {
       return retries * 2000;
     }
     logger.error(
-      new HSWSError('Reconnection retries limit exceeded. Connection terminated.', cause),
+      new HSWSError('Reconnection retries limit exceeded, connection terminated.', cause),
     );
     return false;
   };
 
   private redisErrorCallback = (error: Error): void => {
-    logger.error(new HSWSError(`Redis error`, error));
+    logger.error(new HSWSError('Redis client error', error));
   };
 
   private getRedisDefaultEventCallback = (eventName: string): (() => void) =>
     function redisDefaultEventCallback(): void {
-      logger.debug(`Received ${eventName} event from redis client`);
+      logger.debug(`Received event from redis client: ${eventName}`);
     };
 }
 
