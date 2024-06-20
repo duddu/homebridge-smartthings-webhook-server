@@ -6,7 +6,7 @@ import { constants } from './constants';
 import { HSWSError } from './error';
 import { logger } from './logger';
 
-type HSWSStoreAuthTokens = Omit<AppEvent.InstallData, 'installedApp'>;
+type HSWSStoreAuthTokens = Pick<AppEvent.InstallData, 'authToken' | 'refreshToken'>;
 
 const enum DatabaseKeys {
   PREFIX = 'HSWS',
