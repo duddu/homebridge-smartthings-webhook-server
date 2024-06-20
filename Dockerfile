@@ -1,6 +1,6 @@
 ARG APP_DIR=/home/node/hsws
 
-FROM node:lts-slim as builder
+FROM node:lts-slim AS builder
 
 ARG APP_DIR
 WORKDIR ${APP_DIR}
@@ -18,7 +18,7 @@ COPY --chown=node:node . .
 
 RUN npm run build:ncc
 
-FROM node:lts-alpine as production
+FROM node:lts-alpine AS production
 
 ARG APP_DIR
 WORKDIR ${APP_DIR}
