@@ -14,12 +14,12 @@ import {
 } from './middleware';
 import { store } from './store';
 
-const enum HSWSPaths {
-  PATH_HEALTH = '/healthz',
-  PATH_VERSION = '/version',
-  STATS_VERSION = '/store-stats',
-  PATH_API = '/api',
-  PATH_CLIENTREQUEST = `${PATH_API}/clientrequest`,
+const enum HSWSRoutes {
+  HEALTH = '/healthz',
+  VERSION = '/version',
+  STORE_STATS = '/store-stats',
+  WEBHOOK_API = '/api',
+  WEBHOOK_CLIENT = `${WEBHOOK_API}/clientrequest`,
 }
 
 const listenCallback = async (): Promise<void> => {
@@ -32,14 +32,14 @@ const listenCallback = async (): Promise<void> => {
 };
 
 export const server = express()
-  .get(HSWSPaths.PATH_HEALTH, healthMiddleware)
-  .get(HSWSPaths.PATH_VERSION, versionMiddleware)
-  .get(HSWSPaths.STATS_VERSION, storeStatsMiddleware)
+  .get(HSWSRoutes.HEALTH, healthMiddleware)
+  .get(HSWSRoutes.VERSION, versionMiddleware)
+  .get(HSWSRoutes.STORE_STATS, storeStatsMiddleware)
   .use(express.json())
   .use(compression({ level: 6, threshold: 500 }))
-  .post(HSWSPaths.PATH_API, smartAppWebhookMiddleware)
+  .post(HSWSRoutes.WEBHOOK_API, smartAppWebhookMiddleware)
   .post(
-    HSWSPaths.PATH_CLIENTREQUEST,
+    HSWSRoutes.WEBHOOK_CLIENT,
     webhookTokenMiddleware,
     rateLimitMiddleware,
     clientRequestMiddleware,
