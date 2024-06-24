@@ -154,7 +154,7 @@ jobs:
           } >> "$GITHUB_ENV"
           echo "image_git_ref_tag=$IMAGE_GIT_REF_TAG" >> "$GITHUB_OUTPUT"
       - name: Build${{ github.event_name != 'pull_request' && ' and push' || '' }} image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         id: build_and_push_image
         with:
           context: .
@@ -173,7 +173,7 @@ jobs:
             ${{ format(env.IMAGE_CACHE_SRC, '-arm64') }}
             ${{ format(env.IMAGE_CACHE_SRC, '-amd64') }}
       - name: Push arm64 image build cache
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.event_name != 'pull_request'
         with:
           context: .
@@ -183,7 +183,7 @@ jobs:
           cache-from: ${{ format(env.IMAGE_CACHE_SRC, '-arm64') }}
           cache-to: ${{ format(env.IMAGE_CACHE_SRC, '-arm64,mode=max') }}
       - name: Push amd64 image build cache
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: github.event_name != 'pull_request'
         with:
           context: .
