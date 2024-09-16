@@ -31,7 +31,7 @@
     "start": "node $npm_package_config_build_dir"
   },
   "dependencies": {
-    "@smartthings/smartapp": "^4.3.4",
+    "@smartthings/smartapp": "^4.3.5",
     "compression": "^1.7.4",
     "express": "^4.19.2",
     "express-slow-down": "^2.0.3",

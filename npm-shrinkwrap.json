@@ -9,7 +9,7 @@
       "version": "3.3.1",
       "license": "MPL-2.0",
       "dependencies": {
-        "@smartthings/smartapp": "^4.3.4",
+        "@smartthings/smartapp": "^4.3.5",
         "compression": "^1.7.4",
         "express": "^4.19.2",
         "express-slow-down": "^2.0.3",
@@ -2936,9 +2936,9 @@
       }
     },
     "node_modules/@smartthings/core-sdk": {
-      "version": "8.1.4",
-      "resolved": "https://registry.npmjs.org/@smartthings/core-sdk/-/core-sdk-8.1.4.tgz",
-      "integrity": "sha512-aDDMHGQ4uqOG/OcM00RAk9IVHit/O1Jl1DCNBkvH2IaYVnKUvAMS+rw4oSX403VSZ+B1veTxcunODD+0MSd5mQ==",
+      "version": "8.3.1",
+      "resolved": "https://registry.npmjs.org/@smartthings/core-sdk/-/core-sdk-8.3.1.tgz",
+      "integrity": "sha512-x/HaUXpNOhoa6oCvHXxbb9LjXWwqaHhtixTLgXZ44k7uY+hUE5FPitW70fRDXNksc9CCVJ/i5J7x9/T5/rKuLw==",
       "dependencies": {
         "async-mutex": "^0.4.0",
         "axios": "^0.28.1",
@@ -2963,11 +2963,11 @@
       }
     },
     "node_modules/@smartthings/smartapp": {
-      "version": "4.3.4",
-      "resolved": "https://registry.npmjs.org/@smartthings/smartapp/-/smartapp-4.3.4.tgz",
-      "integrity": "sha512-PvuRgscLq16ydjejlSmrQpwL14YGhLQBUEdY4BWMyXwcnajmycyos7QO44SVcFvjj2l2lj2sOL/v9R5zevEcIQ==",
+      "version": "4.3.5",
+      "resolved": "https://registry.npmjs.org/@smartthings/smartapp/-/smartapp-4.3.5.tgz",
+      "integrity": "sha512-mLF1zDYsnRwpiY8mL0g1W2dJjYsxGBHExflWvcSpSceGHXtH+qOORsoUDkD9cKJofSXiLA6PsA4nCrEggcZJow==",
       "dependencies": {
-        "@smartthings/core-sdk": "^8.1.4",
+        "@smartthings/core-sdk": "^8.3.0",
         "@types/aws-lambda": "^8.10.122",
         "@types/i18n": "^0.13.6",
         "async-mutex": "^0.4.0",
