@@ -1,6 +1,6 @@
 ARG APP_DIR=/home/node/hsws
 
-FROM node:lts-slim AS builder
+FROM node:lts AS builder
 
 ARG APP_DIR
 WORKDIR ${APP_DIR}
