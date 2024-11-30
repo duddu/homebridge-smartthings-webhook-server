@@ -2,19 +2,19 @@
   "compilerOptions": {
     "alwaysStrict": true,
     "inlineSourceMap": true,
-    "module": "ES2022",
-    "moduleResolution": "Bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "noEmitOnError": true,
     "noImplicitAny": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
+    "skipLibCheck": true,
     "strict": true,
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
-    "strictPropertyInitialization": true,
-    "target": "ES2022"
+    "strictPropertyInitialization": true
   },
-  "exclude": ["**/*.spec.ts", "**/*.mock.ts"]
+  "exclude": ["test/**/*"]
 }
